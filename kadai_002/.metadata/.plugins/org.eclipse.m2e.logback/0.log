@@ -1528,3 +1528,4 @@ Caused by: java.nio.file.NoSuchFileException: C:\Users\のり\OneDrive\デスク
 2024-08-10 16:07:46,542 [Worker-545: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 1 resource from src\main\resources to target\classes
 2024-08-10 16:07:46,544 [Worker-545: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 29 resources from src\main\resources to target\classes
 2024-08-10 16:07:46,576 [Worker-545: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - skip non existing resourceDirectory C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\nagoyameshi\src\test\resources
+2024-08-10 16:08:53,907 [Worker-4: Loading available Gradle versions] INFO  o.e.b.c.i.u.g.PublishedGradleVersions - Gradle version information cache is out-of-date. Trying to update.
