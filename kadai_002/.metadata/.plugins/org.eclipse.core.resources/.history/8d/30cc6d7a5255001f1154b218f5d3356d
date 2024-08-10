@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>NAGOYAMESHI</title>
+        <div th:replace="~{fragment :: meta}"></div>   
+        <div th:replace="~{fragment :: styles}"></div>
+    </head>
+    <body>
+        <div class="nagoyameshi-wrapper">
+            <!-- ヘッダー -->
+            <header th:replace="~{fragment :: header}"></header>
+            
+            <main>
+                <div class="container pt-4 pb-5 nagoyameshi-container">
+                    <div th:if="${param.loggedIn}" class="alert alert-info">
+                        ログインしました。
+                    </div>  
+                     
+                    <div th:if="${param.loggedOut}" class="alert alert-info">
+                        ログアウトしました。
+                    </div>
+                </div>
+            </main>
+            
+            <!-- フッター -->
+            <footer th:replace="~{fragment :: footer}"></footer>
+        </div>    
+        
+        <div th:replace="~{fragment :: scripts}"></div>  
+    </body>
+</html>
