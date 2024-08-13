@@ -8,16 +8,8 @@ public class PasswordEncoderGenerator {
 		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
 		// パスワードをエンコード
-		String rawPassword1 = "free";
-		String encodedPassword1 = encoder.encode(rawPassword1);
-		System.out.println("Encoded password for 'free': " + encodedPassword1);
-
-		String rawPassword2 = "premium";
-		String encodedPassword2 = encoder.encode(rawPassword2);
-		System.out.println("Encoded password for 'premium': " + encodedPassword2);
-
-		String rawPassword3 = "admin";
-		String encodedPassword3 = encoder.encode(rawPassword3);
-		System.out.println("Encoded password for 'admin': " + encodedPassword3);
+		String rawPassword = "password";
+		String encodedPassword = encoder.encode(rawPassword);
+		System.out.println("Encoded password for 'password': " + encodedPassword);
 	}
 }

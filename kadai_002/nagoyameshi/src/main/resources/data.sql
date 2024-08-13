@@ -1,4 +1,5 @@
 -- 既存のデータを削除
+DELETE FROM verification_tokens;
 DELETE FROM restaurant;
 DELETE FROM users;
 DELETE FROM roles;
@@ -25,6 +26,6 @@ INSERT INTO roles (name) VALUES ('ROLE_ADMIN'); -- 管理者
 
 -- ユーザーデータ --
 INSERT INTO users (name, furigana, postal_code, address, phone_number, email, password, role_id, enabled) VALUES
-('Free Member', 'フリーメンバー', '123-4567', 'Free Address', '111-1111-1111', 'free@example.com', '$2a$10$rR03./p6CWi8Q2XeD255veqngRm.HoJSxRhojg62YVSROvcYOOp1O', (SELECT id FROM roles WHERE name = 'ROLE_FREE'), true),
-('Premium Member', 'プレミアムメンバー', '234-5678', 'Premium Address', '222-2222-2222', 'premium@example.com', '$2a$10$qbmwGeTbzWkFKxcNGkL0GOpJhUa9e3wzCYpHYVSB5ioOxVM9.xwae', (SELECT id FROM roles WHERE name = 'ROLE_PREMIUM'), true),
-('Admin User', 'アドミンユーザー', '345-6789', 'Admin Address', '333-3333-3333', 'admin@example.com', '$2a$10$B4hNBRUN9R6T94IiymzQMOQmBybPXuANcm8VZKlvI57sttz9bTPzG', (SELECT id FROM roles WHERE name = 'ROLE_ADMIN'), true);
+('Free Member', 'フリーメンバー', '123-4567', 'Free Address', '111-1111-1111', 'free@example.com', '$2a$12$HnxR4h8WmKcV/5mtBlfLPOLv9cbPQzJ0J1qU1z7xwJUkHIO8/9ctu', (SELECT id FROM roles WHERE name = 'ROLE_FREE'), true),
+('Premium Member', 'プレミアムメンバー', '234-5678', 'Premium Address', '222-2222-2222', 'premium@example.com', '$2a$12$7eC.QxLGk0SO62H59lOnpOiePoEOUz.Zlh7c.zGGR3Lg.H1TkivTe', (SELECT id FROM roles WHERE name = 'ROLE_PREMIUM'), true),
+('Admin User', 'アドミンユーザー', '345-6789', 'Admin Address', '333-3333-3333', 'admin@example.com', '$2a$12$X.kHV3Jk8/FfncZTH2cLjeIW4EwD1FE1Xh2V7yb4G6OeM90Fdgi5K', (SELECT id FROM roles WHERE name = 'ROLE_ADMIN'), true);
