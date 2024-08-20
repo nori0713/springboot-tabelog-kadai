@@ -28,13 +28,13 @@ public class User {
 	private String furigana;
 
 	@Column(name = "postal_code")
-	private String postalcode;
+	private String postalCode;
 
 	@Column(name = "address")
 	private String address;
 
 	@Column(name = "phone_number")
-	private String phonenumber;
+	private String phoneNumber;
 
 	@Column(name = "email")
 	private String email;

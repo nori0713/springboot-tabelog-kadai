@@ -18,7 +18,8 @@ public class WebSecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
 				.authorizeHttpRequests((requests) -> requests
-						.requestMatchers("/css/**", "/images/**", "/js/**", "/storage/**", "/", "/index", "/signup/**")
+						.requestMatchers("/css/**", "/images/**", "/js/**", "/storage/**", "/", "/index", "/signup/**",
+								"/houses/**")
 						.permitAll() // すべてのユーザーにアクセスを許可するURL
 						.requestMatchers("/admin/**").hasRole("ADMIN") // 管理者にのみアクセスを許可するURL
 						.requestMatchers("/premium/**").hasRole("PREMIUM") // プレミアム会員にのみアクセスを許可するURL
@@ -28,7 +29,7 @@ public class WebSecurityConfig {
 				.formLogin((form) -> form
 						.loginPage("/login") // ログインページのURL
 						.loginProcessingUrl("/login") // ログインフォームの送信先URL
-						.defaultSuccessUrl("/?loggedIn") // ログイン成功時のリダイレクト先URL
+						.defaultSuccessUrl("/", true) // ログイン成功時のリダイレクト先URL
 						.failureUrl("/login?error") // ログイン失敗時のリダイレクト先URL
 						.permitAll())
 				.logout((logout) -> logout
