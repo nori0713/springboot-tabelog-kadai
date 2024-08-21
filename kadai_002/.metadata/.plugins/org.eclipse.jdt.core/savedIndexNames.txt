@@ -1,5 +1,4 @@
 INDEX VERSION 1.134+C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\.metadata\.plugins\org.eclipse.jdt.core
-1461014136.index
 568152816.index
 3142923053.index
 1654747059.index
