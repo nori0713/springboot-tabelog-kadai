@@ -32,4 +32,8 @@ public class RestaurantRegisterForm {
 
 	@NotBlank(message = "電話番号を入力してください。")
 	private String phoneNumber;
+
+	@NotNull(message = "予約最大人数を入力してください。")
+	@Min(value = 1, message = "予約最大人数は1人以上に設定してください。")
+	private Integer capacity;
 }

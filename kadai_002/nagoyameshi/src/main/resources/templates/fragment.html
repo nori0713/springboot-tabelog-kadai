@@ -42,9 +42,9 @@
                         <li class="nav-item" sec:authorize="isAnonymous()">
                             <a class="nav-link" th:href="@{/login}">ログイン</a>
                         </li>
-						<li class="nav-item" sec:authorize="isAnonymous()">
-							<a class="nav-link" th:href="@{/signup}">会員登録</a>
-						</li>                                                         
+                        <li class="nav-item" sec:authorize="isAnonymous()">
+                            <a class="nav-link" th:href="@{/signup}">会員登録</a>
+                        </li>                                                         
                                      
                         <!-- ログイン済みであれば表示する -->
                         <li class="nav-item dropdown" sec:authorize="hasAnyRole('ROLE_FREE', 'ROLE_PREMIUM')">
@@ -53,8 +53,10 @@
                             </a>
                          
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownGeneral">    
-								<a class="dropdown-item samuraitravel-dropdown-item" th:href="@{/user}">会員情報</a>  
-									<div class="dropdown-divider"></div>                                                              
+                                <a class="dropdown-item nagoyameshi-dropdown-item" th:href="@{/user}">会員情報</a>  
+                                <a class="dropdown-item nagoyameshi-dropdown-item" th:href="@{/reservations}">予約一覧</a>
+								<a class="dropdown-item nagoyameshi-dropdown-item" th:href="@{/favorites}">お気に入り一覧</a>
+                                <div class="dropdown-divider"></div>                                                              
                                 <a class="dropdown-item nagoyameshi-dropdown-item" th:href="@{/logout}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                                     ログアウト
                                 </a>
@@ -69,7 +71,7 @@
                             </a>
                          
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownAdmin">
-								<a class="dropdown-item nagoyameshi-dropdown-item" th:href="@{/admin/users}">会員一覧</a>                                                                                       
+                                <a class="dropdown-item nagoyameshi-dropdown-item" th:href="@{/admin/users}">会員一覧</a>                                                                                       
                                 <a class="dropdown-item nagoyameshi-dropdown-item" th:href="@{/admin/restaurant}">飲食店一覧</a>                                                                                                     
                                                                                    
                                 <div class="dropdown-divider"></div>

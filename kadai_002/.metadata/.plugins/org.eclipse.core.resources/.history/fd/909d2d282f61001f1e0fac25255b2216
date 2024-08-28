@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <div th:replace="~{fragment :: meta}"></div>
+    <div th:replace="~{fragment :: styles}"></div>
+    <title>飲食店編集</title>
+</head>
+<body>
+    <div class="nagoyameshi-wrapper">
+        <!-- ヘッダー -->
+        <div th:replace="~{fragment :: header}"></div>
+        
+        <main>
+            <div class="container pt-4 pb-5 nagoyameshi-container">
+                <div class="row justify-content-center">
+                    <div class="col-xl-5 col-lg-6 col-md-8">
+                        <nav class="mb-4" style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0"> 
+                                <li class="breadcrumb-item"><a th:href="@{/admin/restaurant}">飲食店一覧</a></li>                                                           
+                                <li class="breadcrumb-item active" aria-current="page">飲食店編集</li>
+                            </ol>
+                        </nav> 
+                        
+                        <h1 class="mb-4 text-center">飲食店編集</h1>         
+                        
+                        <form method="post" th:action="@{/admin/restaurant/edit/{id}(id=${restaurantEditForm.id})}" th:object="${restaurantEditForm}" enctype="multipart/form-data">                                                            
+                            <!-- 既存の入力フィールド -->
+
+                            <!-- 予約最大人数の入力フィールドを追加 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-md-4">
+                                    <label for="capacity" class="col-form-label text-md-left fw-bold">予約最大人数</label>
+                                </div>
+                                <div class="col-md-8">
+                                    <div th:if="${#fields.hasErrors('capacity')}" class="text-danger small mb-2" th:errors="*{capacity}"></div>
+                                    <input type="number" class="form-control" th:field="*{capacity}">
+                                </div>
+                            </div>
+                            
+                            <!-- その他の入力フィールド -->
+                            <div class="form-group d-flex justify-content-center my-4">
+                                <button type="submit" class="btn text-white shadow-sm w-50 nagoyameshi-btn">更新</button>
+                            </div>
+                        </form>                                                                         
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- フッター -->
+        <div th:replace="~{fragment :: footer}"></div>
+    </div>
+
+    <div th:replace="~{fragment :: scripts}"></div>
+    <script th:src="@{/js/preview.js}"></script>
+</body>
+</html>

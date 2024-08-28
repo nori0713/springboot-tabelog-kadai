@@ -1,0 +1,23 @@
+package com.example.nagoyameshi.repository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.example.nagoyameshi.entity.Restaurant;
+
+@Repository
+public interface RestaurantRepository extends JpaRepository<Restaurant, Integer> {
+
+	Page<Restaurant> findByNameLikeOrAddressLike(String nameKeyword, String addressKeyword, Pageable pageable);
+
+	// 価格が指定値以下のレストランを検索するメソッド
+	Page<Restaurant> findByPriceLessThanEqual(Integer price, Pageable pageable);
+
+	// 価格が指定値以上のレストランを検索するメソッド
+	Page<Restaurant> findByPriceGreaterThanEqual(Integer price, Pageable pageable);
+
+	// 価格が指定した範囲内のレストランを検索するメソッド
+	Page<Restaurant> findByPriceBetween(Integer minPrice, Integer maxPrice, Pageable pageable);
+}

@@ -19,7 +19,7 @@ public class WebSecurityConfig {
 		http
 				.authorizeHttpRequests((requests) -> requests
 						.requestMatchers("/css/**", "/images/**", "/js/**", "/storage/**", "/", "/index", "/signup/**",
-								"/houses/**")
+								"/restaurants", "/restaurants/{id}", "/restaurants/{id}/reviews")
 						.permitAll() // すべてのユーザーにアクセスを許可するURL
 						.requestMatchers("/admin/**").hasRole("ADMIN") // 管理者にのみアクセスを許可するURL
 						.requestMatchers("/premium/**").hasRole("PREMIUM") // プレミアム会員にのみアクセスを許可するURL

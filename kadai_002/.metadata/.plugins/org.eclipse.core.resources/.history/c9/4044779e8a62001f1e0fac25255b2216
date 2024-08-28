@@ -1,0 +1,18 @@
+package com.example.nagoyameshi.service;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class ReservationService {
+
+	// 予約人数が定員以下かどうかをチェックする
+	public boolean isWithinCapacity(Integer numberOfPeople, Integer capacity) {
+		return numberOfPeople <= capacity;
+	}
+
+	// 予約料金を計算する（1食あたりの価格 * 予約人数）
+	public Integer calculateAmount(Integer numberOfPeople, Integer price) {
+		int amount = price * numberOfPeople;
+		return amount;
+	}
+}

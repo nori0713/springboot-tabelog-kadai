@@ -43,6 +43,7 @@
                                         <th scope="col">住所</th>
                                         <th scope="col">電話番号</th>
                                         <th scope="col">カテゴリ</th>
+										<th scope="col">予約最大人数</th>
                                         <th scope="col">操作</th>
                                     </tr>
                                 </thead>
@@ -54,6 +55,7 @@
 								        <td th:text="${restaurant.address}"></td>
 								        <td th:text="${restaurant.phoneNumber}"></td>
 								        <td th:text="${restaurant.category}"></td>
+										<td th:text="${restaurant.capacity}"></td>
 								        <td>
 								            <a th:href="@{|/admin/restaurant/${restaurant.id}|}">詳細</a> |
 								            <a href="#" class="nagoyameshi-link-danger" data-bs-toggle="modal" th:data-bs-target="${'#deleteRestaurantModal' + restaurant.getId()}">削除</a>

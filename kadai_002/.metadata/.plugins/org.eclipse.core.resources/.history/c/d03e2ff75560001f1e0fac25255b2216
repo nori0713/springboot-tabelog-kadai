@@ -1,0 +1,32 @@
+package com.example.nagoyameshi.repository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.example.nagoyameshi.entity.Restaurant;
+
+@Repository
+public interface RestaurantRepository extends JpaRepository<Restaurant, Integer> {
+
+	// キーワード検索に基づくメソッド
+	Page<Restaurant> findByNameLikeOrAddressLikeOrderByCreatedAtDesc(String nameKeyword, String addressKeyword, Pageable pageable);
+	Page<Restaurant> findByNameLikeOrAddressLikeOrderByPriceAsc(String nameKeyword, String addressKeyword, Pageable pageable);
+
+	// 価格範囲検索に基づくメソッド
+	Page<Restaurant> findByPriceLessThanEqualOrderByCreatedAtDesc(Integer price, Pageable pageable);
+	Page<Restaurant> findByPriceLessThanEqualOrderByPriceAsc(Integer price, Pageable pageable);
+
+	// 価格が指定値以上のレストランを検索するメソッド
+	Page<Restaurant> findByPriceGreaterThanEqualOrderByCreatedAtDesc(Integer price, Pageable pageable);
+	Page<Restaurant> findByPriceGreaterThanEqualOrderByPriceAsc(Integer price, Pageable pageable);
+
+	// 価格が指定した範囲内のレストランを検索するメソッド
+	Page<Restaurant> findByPriceBetweenOrderByCreatedAtDesc(Integer minPrice, Integer maxPrice, Pageable pageable);
+	Page<Restaurant> findByPriceBetweenOrderByPriceAsc(Integer minPrice, Integer maxPrice, Pageable pageable);
+
+	// 全件を並び替えで取得するメソッド
+	Page<Restaurant> findAllByOrderByCreatedAtDesc(Pageable pageable);
+	Page<Restaurant> findAllByOrderByPriceAsc(Pageable pageable);
+}

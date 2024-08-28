@@ -8,7 +8,7 @@
 <body>
     <div class="nagoyameshi-wrapper">
         <!-- ヘッダー -->
-        <div th:replace="~{fragment :: header}"></div>
+        <header th:replace="~{fragment :: header}"></header>
         
         <main>
             <div class="container pt-4 pb-5 nagoyameshi-container">
@@ -37,16 +37,21 @@
                             <div class="card-body bg-light-brown">
                                 <div class="row align-items-center">
                                     <div class="col-md-6 d-flex justify-content-center">
-                                        <img th:if="${restaurant.imageName != null and !#strings.isEmpty(restaurant.imageName)}" th:src="@{/storage/images/__${restaurant.imageName}__}" class="w-100" alt="飲食店画像">
-                                        <img th:unless="${restaurant.imageName != null and !#strings.isEmpty(restaurant.imageName)}" th:src="@{/storage/images/noimage.png}" class="w-100" alt="NO IMAGE">
+                                        <img th:if="${restaurant.imageName != null and !#strings.isEmpty(restaurant.imageName)}" 
+                                             th:src="@{/storage/images/__${restaurant.imageName}__}" 
+                                             class="w-100" alt="飲食店の画像">
+                                        <img th:unless="${restaurant.imageName != null and !#strings.isEmpty(restaurant.imageName)}" 
+                                             th:src="@{/storage/images/noimage.png}" 
+                                             class="w-100" alt="画像がありません">
                                     </div>
                                     <div class="col-md-6 d-flex flex-column justify-content-center">
-                                        <p><strong>住所:</strong> <span th:text="${restaurant.address}"></span></p>
-                                        <p><strong>郵便番号:</strong> <span th:text="${restaurant.postalCode}"></span></p>
-                                     	<p><strong>電話番号:</strong> <span th:text="${restaurant.phoneNumber}"></span></p>
-                                        <p><strong>カテゴリ:</strong> <span th:text="${restaurant.category}"></span></p>
+                                        <p th:if="${restaurant.address}"><strong>住所:</strong> <span th:text="${restaurant.address}"></span></p>
+                                        <p th:if="${restaurant.postalCode}"><strong>郵便番号:</strong> <span th:text="${restaurant.postalCode}"></span></p>
+                                     	<p th:if="${restaurant.phoneNumber}"><strong>電話番号:</strong> <span th:text="${restaurant.phoneNumber}"></span></p>
+                                        <p th:if="${restaurant.category}"><strong>カテゴリ:</strong> <span th:text="${restaurant.category}"></span></p>
                                         <p><strong>料金:</strong> <span th:text="${restaurant.price}"></span>円</p>
                                         <p><strong>説明:</strong> <span th:text="${restaurant.description}"></span></p>
+										<p><strong>予約最大人数:</strong> <span th:text="${restaurant.capacity}"></span>人</p>
                                     </div>
                                 </div>
                             </div>
@@ -62,7 +67,7 @@
         </main>
         
         <!-- フッター -->
-        <div th:replace="~{fragment :: footer}"></div>
+        <footer th:replace="~{fragment :: footer}"></footer>
     </div>
     
     <!-- Bootstrap -->

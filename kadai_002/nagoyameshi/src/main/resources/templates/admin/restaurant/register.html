@@ -24,6 +24,7 @@
                         <h1 class="mb-4 text-center">飲食店登録</h1>         
                         
                         <form method="post" th:action="@{/admin/restaurant/create}" th:object="${restaurantRegisterForm}" enctype="multipart/form-data">                                                            
+                            <!-- 飲食店名 -->
                             <div class="form-group row mb-3">
                                 <div class="col-md-4">
                                     <label for="name" class="col-form-label text-md-left fw-bold">飲食店名</label>
@@ -34,6 +35,7 @@
                                 </div>
                             </div>
                             
+                            <!-- 飲食店画像 -->
                             <div class="form-group row mb-3">
                                 <div class="col-md-4">
                                     <label for="imageFile" class="col-form-label text-md-left fw-bold">飲食店画像</label>
@@ -47,6 +49,7 @@
                             <!-- 選択された画像の表示場所 -->
                             <div class="row" id="imagePreview"></div>                                 
                             
+                            <!-- 説明 -->
                             <div class="form-group row mb-3">
                                 <div class="col-md-4">
                                     <label for="description" class="col-form-label text-md-left fw-bold">説明</label>
@@ -57,6 +60,7 @@
                                 </div>
                             </div>
                             
+                            <!-- 料金 -->
                             <div class="form-group row mb-3">
                                 <div class="col-md-4">
                                     <label for="price" class="col-form-label text-md-left fw-bold">料金（単位：円）</label>
@@ -67,6 +71,7 @@
                                 </div>                                    
                             </div>
                             
+                            <!-- カテゴリ -->
                             <div class="form-group row mb-3">
                                 <div class="col-md-4">
                                     <label for="category" class="col-form-label text-md-left fw-bold">カテゴリ</label>
@@ -77,6 +82,7 @@
                                 </div>                                    
                             </div>
                             
+                            <!-- 郵便番号 -->
                             <div class="form-group row mb-3">
                                 <div class="col-md-4">
                                     <label for="postalCode" class="col-form-label text-md-left fw-bold">郵便番号</label>
@@ -87,6 +93,7 @@
                                 </div>
                             </div>
                                                                                                                
+                            <!-- 住所 -->
                             <div class="form-group row mb-3">
                                 <div class="col-md-4">
                                     <label for="address" class="col-form-label text-md-left fw-bold">住所</label>
@@ -97,6 +104,7 @@
                                 </div>
                             </div>                                                                                
                             
+                            <!-- 電話番号 -->
                             <div class="form-group row mb-3">
                                 <div class="col-md-4">
                                     <label for="phoneNumber" class="col-form-label text-md-left fw-bold">電話番号</label>
@@ -104,6 +112,17 @@
                                 <div class="col-md-8">
                                     <div th:if="${#fields.hasErrors('phoneNumber')}" class="text-danger small mb-2" th:errors="*{phoneNumber}"></div>
                                     <input type="text" class="form-control" th:field="*{phoneNumber}">                                
+                                </div>
+                            </div>
+
+                            <!-- 予約最大人数の入力フィールドを追加 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-md-4">
+                                    <label for="capacity" class="col-form-label text-md-left fw-bold">予約最大人数</label>
+                                </div>
+                                <div class="col-md-8">
+                                    <div th:if="${#fields.hasErrors('capacity')}" class="text-danger small mb-2" th:errors="*{capacity}"></div>
+                                    <input type="number" class="form-control" th:field="*{capacity}">
                                 </div>
                             </div>
                                                                                                                  
