@@ -33,15 +33,6 @@ public class AuthController {
 		this.verificationTokenService = verificationTokenService;
 	}
 
-	@GetMapping("/login")
-	public String login(Model model) {
-		// フラッシュメッセージがあれば、モデルに追加する
-		if (model.containsAttribute("successMessage")) {
-			model.addAttribute("successMessage", model.getAttribute("successMessage"));
-		}
-		return "auth/login";
-	}
-
 	@GetMapping("/signup")
 	public String signup(Model model) {
 		model.addAttribute("signupForm", new SignupForm());
@@ -50,7 +41,7 @@ public class AuthController {
 
 	@PostMapping("/signup")
 	public String signup(@ModelAttribute @Validated SignupForm signupForm, BindingResult bindingResult,
-			RedirectAttributes redirectAttributes, HttpServletRequest httpServletRequest) {
+			RedirectAttributes redirectAttributes, HttpServletRequest request, Model model) {
 		// パスワードと確認用パスワードの一致をチェック
 		if (!signupForm.getPassword().equals(signupForm.getPasswordConfirmation())) {
 			FieldError passwordError = new FieldError(bindingResult.getObjectName(), "passwordConfirmation",
@@ -68,9 +59,21 @@ public class AuthController {
 			return "auth/signup";
 		}
 
+		// ユーザー作成
 		User createdUser = userService.create(signupForm);
-		String requestUrl = new String(httpServletRequest.getRequestURL());
+
+		// メール認証イベントを発行
+		String requestUrl = new String(request.getRequestURL());
 		signupEventPublisher.publishSignupEvent(createdUser, requestUrl);
+
+		// プレミアム会員を選択した場合は、決済ページにリダイレクト
+		if (signupForm.isPremiumSelected()) {
+			redirectAttributes.addFlashAttribute("successMessage",
+					"ご入力いただいたメールアドレスに認証メールを送信しました。メール認証後、決済ページにリダイレクトされます。");
+			return "redirect:/login"; // 一旦ログインページへリダイレクトし、メール認証後に処理を続けます
+		}
+
+		// 通常の無料会員の場合、サインアップ成功メッセージを表示
 		redirectAttributes.addFlashAttribute("successMessage",
 				"ご入力いただいたメールアドレスに認証メールを送信しました。メールに記載されているリンクをクリックし、会員登録を完了してください。");
 
@@ -78,20 +81,17 @@ public class AuthController {
 	}
 
 	@GetMapping("/signup/verify")
-	public String verify(@RequestParam(name = "token") String token, Model model) {
+	public String verify(@RequestParam(name = "token") String token, HttpServletRequest request, Model model) {
 		VerificationToken verificationToken = verificationTokenService.getVerificationToken(token);
 
 		if (verificationToken != null) {
 			User user = verificationToken.getUser();
-			userService.enableUser(user);
-			String successMessage = "会員登録が完了しました。";
-			model.addAttribute("successMessage", successMessage);
+			String redirectUrl = userService.handlePostVerification(user, request);
+			return redirectUrl; // ここでStripeの決済ページへリダイレクトまたはログインページへリダイレクト
 		} else {
 			String errorMessage = "トークンが無効です。";
 			model.addAttribute("errorMessage", errorMessage);
+			return "auth/verify";
 		}
-
-		return "auth/verify";
 	}
-
 }

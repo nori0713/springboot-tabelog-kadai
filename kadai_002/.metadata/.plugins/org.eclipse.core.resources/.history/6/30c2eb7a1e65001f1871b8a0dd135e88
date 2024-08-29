@@ -1,0 +1,53 @@
+package com.example.nagoyameshi.service;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.checkout.SessionCreateParams;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@Service
+public class StripeService {
+
+    @Value("${stripe.api.key}")
+    private String stripeApiKey;
+
+    @Value("${stripe.price.id}")
+    private String stripePriceId;
+
+    public StripeService() {
+        // StripeのAPIキーを初期化
+        Stripe.apiKey = stripeApiKey;
+    }
+
+    // サブスクリプション用のセッションを作成し、Stripeに必要な情報を返す
+    public String createSubscriptionSession(HttpServletRequest httpServletRequest, String userEmail) {
+        String requestUrl = httpServletRequest.getRequestURL().toString();
+
+        // Stripeのセッション作成
+        SessionCreateParams params = SessionCreateParams.builder()
+            .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
+            .addLineItem(
+                SessionCreateParams.LineItem.builder()
+                    .setPrice(stripePriceId) // 事前にStripeで作成した価格IDを使用
+                    .setQuantity(1L)
+                    .build())
+            .setMode(SessionCreateParams.Mode.SUBSCRIPTION) // サブスクリプションモードに設定
+            .setSuccessUrl(requestUrl.replace("/subscribe", "") + "/subscription/success")
+            .setCancelUrl(requestUrl.replace("/subscribe", "") + "/subscription/cancel")
+            .setCustomerEmail(userEmail) // ユーザーのメールアドレスを設定
+            .build();
+
+        try {
+            Session session = Session.create(params);
+            return session.getUrl(); // セッションのURLを返す
+        } catch (StripeException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+}

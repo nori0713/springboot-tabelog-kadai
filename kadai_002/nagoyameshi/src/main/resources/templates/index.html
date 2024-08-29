@@ -24,6 +24,15 @@
                         <span th:text="${successMessage}"></span>
                     </div> 
 
+                    <!-- サブスクリプションメッセージ -->
+                    <div th:if="${subscriptionStatus == 'EXPIRED'}" class="alert alert-warning">
+                        あなたのサブスクリプションは期限切れです。<a th:href="@{/subscribe}">こちら</a>から再登録をお願いします。
+                    </div>
+
+                    <div th:if="${subscriptionStatus == 'ACTIVE'}" class="alert alert-success">
+                        あなたは有料会員です。ありがとうございます！
+                    </div>
+
                     <!-- スライドショー -->
                     <div id="carouselExampleIndicators" class="carousel slide mb-5" data-bs-ride="carousel" data-bs-interval="5000">
                         <div class="carousel-inner">

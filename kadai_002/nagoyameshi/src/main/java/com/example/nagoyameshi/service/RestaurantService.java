@@ -43,6 +43,7 @@ public class RestaurantService {
 		restaurant.setPostalCode(restaurantRegisterForm.getPostalCode());
 		restaurant.setAddress(restaurantRegisterForm.getAddress());
 		restaurant.setPhoneNumber(restaurantRegisterForm.getPhoneNumber());
+		restaurant.setCapacity(restaurantRegisterForm.getCapacity()); // 予約最大人数を設定
 
 		restaurantRepository.save(restaurant);
 	}
@@ -68,6 +69,7 @@ public class RestaurantService {
 		restaurant.setPostalCode(restaurantEditForm.getPostalCode());
 		restaurant.setAddress(restaurantEditForm.getAddress());
 		restaurant.setPhoneNumber(restaurantEditForm.getPhoneNumber());
+		restaurant.setCapacity(restaurantEditForm.getCapacity()); // 予約最大人数を設定
 
 		restaurantRepository.save(restaurant);
 	}

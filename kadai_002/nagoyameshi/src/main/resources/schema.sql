@@ -28,12 +28,13 @@ CREATE TABLE IF NOT EXISTS users (
      phone_number VARCHAR(50) NOT NULL,
      email VARCHAR(255) NOT NULL UNIQUE,
      password VARCHAR(255) NOT NULL,    
-     role_id INT NOT NULL, 
+     role_id INT NOT NULL,
      enabled BOOLEAN NOT NULL,
+     subscription_status VARCHAR(20) DEFAULT 'INACTIVE', -- サブスクリプションの状態を表す新しいカラムを追加
      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,    
      FOREIGN KEY (role_id) REFERENCES roles (id)
- );
+);
  
  -- 認証（verification_tokens）テーブル --
  CREATE TABLE IF NOT EXISTS verification_tokens (

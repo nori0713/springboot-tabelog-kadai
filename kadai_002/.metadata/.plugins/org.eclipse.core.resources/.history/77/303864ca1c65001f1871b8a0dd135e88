@@ -1,0 +1,46 @@
+package com.example.nagoyameshi.service;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.checkout.SessionCreateParams;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@Service
+public class StripeService {
+
+	@Value("${stripe.api.key}")
+	private String stripeApiKey;
+
+	@Value("${stripe.price.id}")
+	private String stripePriceId;
+
+	public String createCheckoutSession(HttpServletRequest httpServletRequest) {
+		Stripe.apiKey = stripeApiKey;
+		String requestUrl = httpServletRequest.getRequestURL().toString();
+
+		SessionCreateParams params = SessionCreateParams.builder()
+				.addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
+				.addLineItem(
+						SessionCreateParams.LineItem.builder()
+								.setPrice(stripePriceId)
+								.setQuantity(1L)
+								.build())
+				.setMode(SessionCreateParams.Mode.SUBSCRIPTION) // サブスクリプションモードに設定
+				.setSuccessUrl(requestUrl.replace("/checkout", "") + "/subscription/success")
+				.setCancelUrl(requestUrl.replace("/checkout", "") + "/subscription/cancel")
+				.build();
+
+		try {
+			Session session = Session.create(params);
+			return session.getUrl(); // リダイレクト用のURLを返す
+		} catch (StripeException e) {
+			e.printStackTrace();
+			return "";
+		}
+	}
+}

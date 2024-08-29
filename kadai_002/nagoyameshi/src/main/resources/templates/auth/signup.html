@@ -138,41 +138,57 @@
                                 </div>
                             </div>
                             
-                            <div class="form-group row mb-3">
-                                <div class="col-md-5">
-                                    <label for="role" class="col-form-label text-md-left fw-bold">
-                                        <div class="d-flex align-items-center">
-                                            <span class="me-1">会員種別</span>
-                                            <span class="badge bg-danger">必須</span>
-                                        </div>
-                                    </label>
-                                </div>
-                                <div class="col-md-7">
-                                    <div th:if="${#fields.hasErrors('role')}" class="text-danger small mb-2" th:errors="*{role}"></div>
-                                    <select class="form-control" th:field="*{role}">
-                                        <option value="FREE">無料会員</option>
-                                        <option value="PREMIUM">有料会員</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="form-group d-flex justify-content-center my-4">
-                                <button type="submit" class="btn text-white shadow-sm w-50 nagoyameshi-btn">登録</button>
-                            </div>
-                        </form>
-                        
-                        <div class="text-center">
-                            <a th:href="@{/login}">ログイン</a>
-                        </div>
-                    </div>
-                </div>
-            </div>           
-        </main>
+							<div class="form-group row mb-3">
+								<div class="col-md-5">
+									<label for="role" class="col-form-label text-md-left fw-bold">
+										<div class="d-flex align-items-center">
+							        		<span class="me-1">会員種別</span>
+											<span class="badge bg-danger">必須</span>
+							    		</div>
+									</label>
+								</div>
+								<div class="col-md-7">
+							   		<div th:if="${#fields.hasErrors('role')}" class="text-danger small mb-2" th:errors="*{role}"></div>
+							 		<select class="form-control" th:field="*{role}" id="role-select" onchange="updateButtonText()">
+							       		<option value="FREE">無料会員</option>
+							       		<option value="PREMIUM">有料会員</option>
+							         </select>
+								</div>
+							</div>
+							
+							<div class="form-group d-flex justify-content-center my-4">
+								<button type="submit" id="submit-button" class="btn text-white shadow-sm w-50 nagoyameshi-btn">登録</button>
+							</div>
+						</form>
+							                        
+						<div class="text-center">
+							<a th:href="@{/login}">ログイン</a>
+						</div>
+					</div>
+				</div>
+			</div>           
+		</main>
         
         <!-- フッター -->
         <div th:replace="~{fragment :: footer}"></div>
     </div>    
     
-    <div th:replace="~{fragment :: scripts}"></div>         
+    <div th:replace="~{fragment :: scripts}"></div>       
+	  
+	<!-- 会員種別によってボタンを変更 -->
+	<script>
+		function updateButtonText() {
+			const roleSelect = document.getElementById('role-select');
+	     	const submitButton = document.getElementById('submit-button');
+			if (roleSelect.value === 'PREMIUM') {
+	    		submitButton.textContent = '決済';
+	   		} else {
+	    		submitButton.textContent = '登録';
+	 		}
+		}
+	
+		// ページが読み込まれた際にボタンのテキストを設定
+	 	document.addEventListener("DOMContentLoaded", updateButtonText);
+	</script>
 </body>
 </html>

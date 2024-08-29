@@ -1,5 +1,6 @@
 package com.example.nagoyameshi.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,25 +17,29 @@ import com.example.nagoyameshi.entity.User;
 import com.example.nagoyameshi.form.UserEditForm;
 import com.example.nagoyameshi.repository.UserRepository;
 import com.example.nagoyameshi.security.UserDetailsImpl;
+import com.example.nagoyameshi.service.StripeService; // StripeServiceをインポート
 import com.example.nagoyameshi.service.UserService;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @Controller
 @RequestMapping("/user")
 public class UserController {
 	private final UserRepository userRepository;
 	private final UserService userService;
+	private final StripeService stripeService; // StripeServiceの依存性注入
 
-	public UserController(UserRepository userRepository, UserService userService) {
+	@Autowired
+	public UserController(UserRepository userRepository, UserService userService, StripeService stripeService) {
 		this.userRepository = userRepository;
 		this.userService = userService;
+		this.stripeService = stripeService; // StripeServiceの初期化
 	}
 
 	@GetMapping
 	public String index(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model) {
 		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
-
 		model.addAttribute("user", user);
-
 		return "user/index";
 	}
 
@@ -45,7 +50,6 @@ public class UserController {
 				user.getPostalCode(), user.getAddress(), user.getPhoneNumber(), user.getEmail());
 
 		model.addAttribute("userEditForm", userEditForm);
-
 		return "user/edit";
 	}
 
@@ -60,13 +64,19 @@ public class UserController {
 
 		if (bindingResult.hasErrors()) {
 			return "user/edit";
-
 		}
 
 		userService.update(userEditForm);
 		redirectAttributes.addFlashAttribute("successMessage", "会員情報を編集しました。");
-
 		return "redirect:/user";
 	}
 
+	// 有料会員へのアップグレード処理
+	@PostMapping("/subscribe")
+	public String subscribeToPremium(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+			HttpServletRequest request) {
+		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
+		String checkoutUrl = stripeService.createSubscriptionSession(request, user.getEmail());
+		return "redirect:" + checkoutUrl; // Stripe Checkoutにリダイレクト
+	}
 }

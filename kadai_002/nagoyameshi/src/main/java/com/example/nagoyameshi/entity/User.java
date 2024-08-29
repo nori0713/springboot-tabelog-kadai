@@ -49,10 +49,27 @@ public class User {
 	@Column(name = "enabled")
 	private Boolean enabled;
 
+	@Column(name = "subscription_status")
+	private String subscriptionStatus; // サブスクリプションの状態
+
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private Timestamp createdAt;
 
 	@Column(name = "updated_at", insertable = false, updatable = false)
 	private Timestamp updatedAt;
 
+	// サブスクリプションステータスのゲッター
+	public String getSubscriptionStatus() {
+		return this.subscriptionStatus;
+	}
+
+	// 必要に応じてサブスクリプションステータスのセッターも追加できます
+	public void setSubscriptionStatus(String subscriptionStatus) {
+		this.subscriptionStatus = subscriptionStatus;
+	}
+
+	// 有料会員かどうかを判定するヘルパーメソッド
+	public boolean isPremiumMember() {
+		return "ROLE_PREMIUM".equals(this.role.getName());
+	}
 }

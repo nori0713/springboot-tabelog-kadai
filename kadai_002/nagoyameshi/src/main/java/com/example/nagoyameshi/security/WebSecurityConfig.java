@@ -1,13 +1,24 @@
 package com.example.nagoyameshi.security;
 
+import java.io.IOException;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+
+import com.example.nagoyameshi.exception.SubscriptionExpiredException;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
@@ -30,7 +41,7 @@ public class WebSecurityConfig {
 						.loginPage("/login") // ログインページのURL
 						.loginProcessingUrl("/login") // ログインフォームの送信先URL
 						.defaultSuccessUrl("/", true) // ログイン成功時のリダイレクト先URL
-						.failureUrl("/login?error") // ログイン失敗時のリダイレクト先URL
+						.failureHandler(authenticationFailureHandler()) // カスタム失敗ハンドラー
 						.permitAll())
 				.logout((logout) -> logout
 						.logoutSuccessUrl("/?loggedOut") // ログアウト時のリダイレクト先URL
@@ -42,5 +53,20 @@ public class WebSecurityConfig {
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
+	}
+
+	@Bean
+	public AuthenticationFailureHandler authenticationFailureHandler() {
+		return new SimpleUrlAuthenticationFailureHandler() {
+			@Override
+			public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+					AuthenticationException exception) throws IOException, ServletException {
+				if (exception instanceof SubscriptionExpiredException) {
+					getRedirectStrategy().sendRedirect(request, response, "/login?error=subscriptionExpired");
+				} else {
+					getRedirectStrategy().sendRedirect(request, response, "/login?error");
+				}
+			}
+		};
 	}
 }

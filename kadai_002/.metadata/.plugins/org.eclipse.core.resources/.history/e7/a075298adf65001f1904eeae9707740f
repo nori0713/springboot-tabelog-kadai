@@ -1,0 +1,108 @@
+package com.example.nagoyameshi.service;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.example.nagoyameshi.entity.Role;
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.form.SignupForm;
+import com.example.nagoyameshi.form.UserEditForm;
+import com.example.nagoyameshi.repository.RoleRepository;
+import com.example.nagoyameshi.repository.UserRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
+
+@Service
+public class UserService {
+	private final UserRepository userRepository;
+	private final RoleRepository roleRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final StripeService stripeService; // StripeServiceを注入
+
+	public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder,
+			StripeService stripeService) {
+		this.userRepository = userRepository;
+		this.roleRepository = roleRepository;
+		this.passwordEncoder = passwordEncoder;
+		this.stripeService = stripeService;
+	}
+
+	@Transactional
+	public User create(SignupForm signupForm) {
+		User user = new User();
+
+		// ロールの選択に基づいて適切なロールを割り当てる
+		Role role;
+		if (signupForm.isPremiumSelected()) {
+			role = roleRepository.findByName("ROLE_PREMIUM");
+			user.setSubscriptionStatus("INACTIVE"); // プレミアム会員はサブスクリプションがアクティブになるまではINACTIVE
+		} else {
+			role = roleRepository.findByName("ROLE_FREE");
+			user.setSubscriptionStatus("INACTIVE"); // 無料会員も初期状態ではINACTIVEに設定
+		}
+
+		user.setName(signupForm.getName());
+		user.setFurigana(signupForm.getFurigana());
+		user.setPostalCode(signupForm.getPostalCode());
+		user.setAddress(signupForm.getAddress());
+		user.setPhoneNumber(signupForm.getPhoneNumber());
+		user.setEmail(signupForm.getEmail());
+		user.setPassword(passwordEncoder.encode(signupForm.getPassword()));
+		user.setRole(role);
+		user.setEnabled(false);
+
+		return userRepository.save(user); // ユーザー作成後に戻り値を返す
+	}
+
+	// プレミアム会員の場合、StripeのセッションURLを生成する
+	public String createSubscriptionSession(HttpServletRequest request, String userEmail) {
+		return stripeService.createSubscriptionSession(request, userEmail);
+	}
+
+	@Transactional
+	public void update(UserEditForm userEditForm) {
+		User user = userRepository.getReferenceById(userEditForm.getId());
+
+		user.setName(userEditForm.getName());
+		user.setFurigana(userEditForm.getFurigana());
+		user.setPostalCode(userEditForm.getPostalCode());
+		user.setAddress(userEditForm.getAddress());
+		user.setPhoneNumber(userEditForm.getPhoneNumber());
+		user.setEmail(userEditForm.getEmail());
+
+		userRepository.save(user);
+	}
+
+	// メールアドレスが登録済みかどうかチェックする
+	public boolean isEmailRegistered(String email) {
+		User user = userRepository.findByEmail(email);
+		return user != null;
+	}
+
+	// パスワードとパスワード（確認用）の入力値が一致するかどうかをチェックする
+	public boolean isSamePassword(String password, String passwordConfirmation) {
+		return password.equals(passwordConfirmation);
+	}
+
+	// ユーザーを有効にする
+	@Transactional
+	public void enableUser(User user) {
+		user.setEnabled(true);
+		userRepository.save(user);
+	}
+
+	// メールアドレスが変更されたかどうかをチェックする
+	public boolean isEmailChanged(UserEditForm userEditForm) {
+		User currentUser = userRepository.getReferenceById(userEditForm.getId());
+		return !userEditForm.getEmail().equals(currentUser.getEmail());
+	}
+
+	// ユーザーにロールを割り当てるメソッド
+	@Transactional
+	public void assignRole(User user, String roleName) {
+		Role role = roleRepository.findByName(roleName);
+		user.setRole(role);
+		userRepository.save(user);
+	}
+}

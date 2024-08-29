@@ -14,9 +14,13 @@
         
         <main>
             <div class="container pt-4 pb-5 nagoyameshi-container">
+                <!-- エラーメッセージの表示 -->
                 <div th:if="${param.error}" class="alert alert-danger">
-                    メールアドレスまたはパスワードが正しくありません。
+                    <span th:if="${param.error == 'subscriptionExpired'}">サブスクリプションが期限切れです。再度ご登録をお願いします。</span>
+                    <span th:unless="${param.error == 'subscriptionExpired'}">メールアドレスまたはパスワードが正しくありません。</span>
                 </div>
+                
+                <!-- 成功メッセージの表示 -->
                 <div th:if="${successMessage}" class="alert alert-success">
                     [[${successMessage}]]
                 </div>

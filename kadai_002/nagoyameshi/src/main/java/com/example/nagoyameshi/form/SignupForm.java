@@ -34,10 +34,17 @@ public class SignupForm {
 	@NotBlank(message = "パスワード（確認用）を入力してください。")
 	private String passwordConfirmation;
 
+	// サブスクリプション選択用のフィールド
 	@NotBlank(message = "会員種別を選択してください。")
 	private String role;
 
+	// パスワードが一致しているか確認
 	public boolean isPasswordMatching() {
 		return this.password.equals(this.passwordConfirmation);
+	}
+
+	// 有料会員が選択されているかを確認
+	public boolean isPremiumSelected() {
+		return "ROLE_PREMIUM".equals(this.role);
 	}
 }
