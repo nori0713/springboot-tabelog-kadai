@@ -111,7 +111,7 @@ public class UserService {
 	public String handlePostVerification(User user, HttpServletRequest request) {
 		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
 			// プレミアム会員の場合はStripe決済ページへリダイレクト
-			return createSubscriptionSession(request, user.getEmail());
+			return "redirect:" + createSubscriptionSession(request, user.getEmail());
 		} else {
 			// 無料会員の場合はアカウントを有効化し、ログインページへリダイレクト
 			enableUser(user);

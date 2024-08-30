@@ -41,7 +41,7 @@ public class AuthController {
 
 	@PostMapping("/signup")
 	public String signup(@ModelAttribute @Validated SignupForm signupForm, BindingResult bindingResult,
-			RedirectAttributes redirectAttributes, HttpServletRequest request, Model model) {
+			RedirectAttributes redirectAttributes, HttpServletRequest request) {
 		// パスワードと確認用パスワードの一致をチェック
 		if (!signupForm.getPassword().equals(signupForm.getPasswordConfirmation())) {
 			FieldError passwordError = new FieldError(bindingResult.getObjectName(), "passwordConfirmation",
@@ -66,14 +66,6 @@ public class AuthController {
 		String requestUrl = new String(request.getRequestURL());
 		signupEventPublisher.publishSignupEvent(createdUser, requestUrl);
 
-		// プレミアム会員を選択した場合は、決済ページにリダイレクト
-		if (signupForm.isPremiumSelected()) {
-			redirectAttributes.addFlashAttribute("successMessage",
-					"ご入力いただいたメールアドレスに認証メールを送信しました。メール認証後、決済ページにリダイレクトされます。");
-			return "redirect:/login"; // 一旦ログインページへリダイレクトし、メール認証後に処理を続けます
-		}
-
-		// 通常の無料会員の場合、サインアップ成功メッセージを表示
 		redirectAttributes.addFlashAttribute("successMessage",
 				"ご入力いただいたメールアドレスに認証メールを送信しました。メールに記載されているリンクをクリックし、会員登録を完了してください。");
 
@@ -86,12 +78,26 @@ public class AuthController {
 
 		if (verificationToken != null) {
 			User user = verificationToken.getUser();
-			String redirectUrl = userService.handlePostVerification(user, request);
-			return redirectUrl; // ここでStripeの決済ページへリダイレクトまたはログインページへリダイレクト
+			userService.enableUser(user); // ユーザーを有効化
+
+			// 有料会員かどうかを確認
+			if ("ROLE_PREMIUM".equals(user.getRole().getName())) { // ロール名の確認
+				// サブスクリプションのセッションURLを生成してリダイレクト
+				String sessionUrl = userService.createSubscriptionSession(request, user.getEmail());
+				return "redirect:" + sessionUrl;
+			}
+
+			// 無料会員の場合、ログインページにリダイレクト
+			model.addAttribute("successMessage", "メール認証が完了しました。ログインしてください。");
+			return "auth/login";
 		} else {
-			String errorMessage = "トークンが無効です。";
-			model.addAttribute("errorMessage", errorMessage);
+			model.addAttribute("errorMessage", "トークンが無効です。");
 			return "auth/verify";
 		}
+	}
+
+	@GetMapping("/login")
+	public String login(Model model) {
+		return "auth/login"; // ログインページのテンプレート名を指定
 	}
 }

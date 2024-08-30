@@ -49,10 +49,11 @@ public class StripeService {
 			return session.getUrl(); // セッションのURLを返す
 		} catch (StripeException e) {
 			e.printStackTrace();
-			return "";
+			return null; // エラーハンドリングを強化
 		}
 	}
 
+	// リクエストからベースURLを取得するヘルパーメソッド
 	private String getBaseUrl(HttpServletRequest request) {
 		String requestUrl = request.getRequestURL().toString();
 		String servletPath = request.getServletPath();

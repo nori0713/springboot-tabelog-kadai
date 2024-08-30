@@ -27,15 +27,23 @@ public class SignupEventListener {
 		verificationTokenService.create(user, token);
 
 		String recipientAddress = user.getEmail();
-		String subject = "メール認証";
-		String confirmationUrl = signupEvent.getRequestUrl() + "/verify?token=" + token;
-		String message = "以下のリンクをクリックして会員登録を完了してください。";
+		String verificationUrl = signupEvent.getRequestUrl() + "/verify?token=" + token;
+
+		// メール内容を生成
+		String subject = "【NAGOYAMESHI】メールアドレス確認のお願い";
+		String message = String.format("こんにちは %s さん,\n\n"
+				+ "以下のリンクをクリックして、メールアドレスを確認してください。\n"
+				+ "リンク: %s\n\n"
+				+ "有料会員の方は、認証後に決済ページにリダイレクトされます。\n"
+				+ "無料会員の方は、ログインページにリダイレクトされます。\n\n"
+				+ "よろしくお願いします。\n\n"
+				+ "NAGOYAMESHIチーム", user.getName(), verificationUrl);
 
 		SimpleMailMessage mailMessage = new SimpleMailMessage();
 		mailMessage.setFrom("yasuminorihiro0713@gmail.com"); // 送信者アドレスを明示的に設定
 		mailMessage.setTo(recipientAddress);
 		mailMessage.setSubject(subject);
-		mailMessage.setText(message + "\n" + confirmationUrl);
+		mailMessage.setText(message);
 		javaMailSender.send(mailMessage);
 	}
 }

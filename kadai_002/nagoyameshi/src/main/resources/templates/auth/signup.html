@@ -149,7 +149,7 @@
 								</div>
 								<div class="col-md-7">
 							   		<div th:if="${#fields.hasErrors('role')}" class="text-danger small mb-2" th:errors="*{role}"></div>
-							 		<select class="form-control" th:field="*{role}" id="role-select" onchange="updateButtonText()">
+							 		<select class="form-control" th:field="*{role}">
 							       		<option value="FREE">無料会員</option>
 							       		<option value="PREMIUM">有料会員</option>
 							         </select>
@@ -157,7 +157,7 @@
 							</div>
 							
 							<div class="form-group d-flex justify-content-center my-4">
-								<button type="submit" id="submit-button" class="btn text-white shadow-sm w-50 nagoyameshi-btn">登録</button>
+								<button type="submit" class="btn text-white shadow-sm w-50 nagoyameshi-btn">登録</button>
 							</div>
 						</form>
 							                        
@@ -174,21 +174,5 @@
     </div>    
     
     <div th:replace="~{fragment :: scripts}"></div>       
-	  
-	<!-- 会員種別によってボタンを変更 -->
-	<script>
-		function updateButtonText() {
-			const roleSelect = document.getElementById('role-select');
-	     	const submitButton = document.getElementById('submit-button');
-			if (roleSelect.value === 'PREMIUM') {
-	    		submitButton.textContent = '決済';
-	   		} else {
-	    		submitButton.textContent = '登録';
-	 		}
-		}
-	
-		// ページが読み込まれた際にボタンのテキストを設定
-	 	document.addEventListener("DOMContentLoaded", updateButtonText);
-	</script>
 </body>
 </html>

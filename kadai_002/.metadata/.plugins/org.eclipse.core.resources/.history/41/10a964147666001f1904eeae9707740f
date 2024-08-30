@@ -1,0 +1,51 @@
+package com.example.nagoyameshi.event;
+
+import java.util.UUID;
+
+import org.springframework.context.event.EventListener;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Component;
+
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.service.VerificationTokenService;
+
+@Component
+public class SignupEventListener {
+	private final VerificationTokenService verificationTokenService;
+	private final JavaMailSender javaMailSender;
+
+	public SignupEventListener(VerificationTokenService verificationTokenService, JavaMailSender mailSender) {
+		this.verificationTokenService = verificationTokenService;
+		this.javaMailSender = mailSender;
+	}
+
+	@EventListener
+	private void onSignupEvent(SignupEvent signupEvent) {
+		User user = signupEvent.getUser();
+		String token = UUID.randomUUID().toString();
+		verificationTokenService.create(user, token);
+
+		String recipientAddress = user.getEmail();
+		String subject = "メール認証";
+		String confirmationUrl = signupEvent.getRequestUrl() + "/verify?token=" + token;
+
+		// メッセージ内容の作成
+		StringBuilder message = new StringBuilder();
+		message.append("以下のリンクをクリックして会員登録を完了してください。\n")
+				.append(confirmationUrl)
+				.append("\n\n");
+
+		// 有料会員の場合の注意書き
+		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
+			message.append("有料会員の方は、認証後に決済ページにリダイレクトされます。");
+		}
+
+		SimpleMailMessage mailMessage = new SimpleMailMessage();
+		mailMessage.setFrom("yasuminorihiro0713@gmail.com"); // 送信者アドレスを明示的に設定
+		mailMessage.setTo(recipientAddress);
+		mailMessage.setSubject(subject);
+		mailMessage.setText(message.toString());
+		javaMailSender.send(mailMessage);
+	}
+}
