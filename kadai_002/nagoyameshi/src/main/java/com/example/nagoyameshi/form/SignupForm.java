@@ -45,6 +45,6 @@ public class SignupForm {
 
 	// 有料会員が選択されているかを確認
 	public boolean isPremiumSelected() {
-		return "ROLE_PREMIUM".equals(this.role);
+		return "PREMIUM".equals(this.role);
 	}
 }

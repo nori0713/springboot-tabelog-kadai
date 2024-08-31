@@ -35,10 +35,10 @@ public class UserService {
 		// ロールの選択に基づいて適切なロールを割り当てる
 		Role role;
 		if (signupForm.isPremiumSelected()) {
-			role = roleRepository.findByName("ROLE_PREMIUM");
+			role = roleRepository.findByName("PREMIUM");
 			user.setSubscriptionStatus("INACTIVE"); // プレミアム会員はサブスクリプションがアクティブになるまではINACTIVE
 		} else {
-			role = roleRepository.findByName("ROLE_FREE");
+			role = roleRepository.findByName("FREE");
 			user.setSubscriptionStatus("INACTIVE"); // 無料会員も初期状態ではINACTIVEに設定
 		}
 
@@ -106,10 +106,19 @@ public class UserService {
 		userRepository.save(user);
 	}
 
+	// ユーザーのロールをプレミアムにアップグレードし、サブスクリプションをアクティブ化する
+	@Transactional
+	public void upgradeToPremium(User user) {
+		Role premiumRole = roleRepository.findByName("PREMIUM");
+		user.setRole(premiumRole);
+		user.setSubscriptionStatus("ACTIVE");
+		userRepository.save(user);
+	}
+
 	// メール認証後の処理
 	@Transactional
 	public String handlePostVerification(User user, HttpServletRequest request) {
-		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
+		if ("PREMIUM".equals(user.getRole().getName())) {
 			// プレミアム会員の場合はStripe決済ページへリダイレクト
 			return "redirect:" + createSubscriptionSession(request, user.getEmail());
 		} else {

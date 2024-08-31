@@ -2,11 +2,11 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- 既存のデータを削除
-DELETE FROM favorites;
-DELETE FROM reviews;
-DELETE FROM reservations;
-DELETE FROM users;
-DELETE FROM roles;
+-- DELETE FROM favorites;
+-- DELETE FROM reviews;
+-- DELETE FROM reservations;
+-- DELETE FROM users;
+-- DELETE FROM roles;
 DELETE FROM restaurants;
 
 -- 外部キー制約を再び有効化

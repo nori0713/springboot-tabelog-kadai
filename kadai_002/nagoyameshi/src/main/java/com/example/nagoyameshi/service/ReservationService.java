@@ -45,6 +45,11 @@ public class ReservationService {
 			throw new IllegalArgumentException("予約人数は1以上である必要があります");
 		}
 
+		// 有料会員かどうかをチェック
+		if (!"PREMIUM".equals(user.getRole().getName())) {
+			throw new IllegalStateException("予約機能は有料会員のみが使用可能です");
+		}
+
 		reservation.setRestaurant(restaurant);
 		reservation.setUser(user);
 		reservation.setReservationDate(reservationDate);

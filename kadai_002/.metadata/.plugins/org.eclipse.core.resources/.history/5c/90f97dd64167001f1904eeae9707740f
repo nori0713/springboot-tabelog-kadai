@@ -1,0 +1,70 @@
+package com.example.nagoyameshi.service;
+
+import java.time.LocalDate;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.nagoyameshi.entity.Reservation;
+import com.example.nagoyameshi.entity.Restaurant;
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.form.ReservationRegisterForm;
+import com.example.nagoyameshi.repository.ReservationRepository;
+import com.example.nagoyameshi.repository.RestaurantRepository;
+import com.example.nagoyameshi.repository.UserRepository;
+
+@Service
+public class ReservationService {
+	private final ReservationRepository reservationRepository;
+	private final RestaurantRepository restaurantRepository;
+	private final UserRepository userRepository;
+
+	public ReservationService(ReservationRepository reservationRepository, RestaurantRepository restaurantRepository,
+			UserRepository userRepository) {
+		this.reservationRepository = reservationRepository;
+		this.restaurantRepository = restaurantRepository;
+		this.userRepository = userRepository;
+	}
+
+	@Transactional
+	public void create(ReservationRegisterForm reservationRegisterForm) {
+		// 予約日がnullでないことを確認
+		if (reservationRegisterForm.getReservationDate() == null) {
+			throw new IllegalArgumentException("予約日が指定されていません");
+		}
+
+		Reservation reservation = new Reservation();
+		Restaurant restaurant = restaurantRepository.getReferenceById(reservationRegisterForm.getRestaurantId());
+		User user = userRepository.getReferenceById(reservationRegisterForm.getUserId());
+		LocalDate reservationDate = LocalDate.parse(reservationRegisterForm.getReservationDate());
+
+		// 予約人数が0以下でないことを確認
+		if (reservationRegisterForm.getNumberOfPeople() <= 0) {
+			throw new IllegalArgumentException("予約人数は1以上である必要があります");
+		}
+
+		// 有料会員かどうかをチェック
+		if (!"ROLE_PREMIUM".equals(user.getRole().getName())) {
+			throw new IllegalStateException("予約機能は有料会員のみが使用可能です");
+		}
+
+		reservation.setRestaurant(restaurant);
+		reservation.setUser(user);
+		reservation.setReservationDate(reservationDate);
+		reservation.setNumberOfPeople(reservationRegisterForm.getNumberOfPeople());
+
+		reservationRepository.save(reservation);
+	}
+
+	// 予約人数が定員以下かどうかをチェックする
+	public boolean isWithinCapacity(Integer numberOfPeople, Integer capacity) {
+		return numberOfPeople <= capacity;
+	}
+
+	// ユーザーに関連する予約を取得するメソッド
+	public Page<Reservation> getReservationsForUser(User user, Pageable pageable) {
+		return reservationRepository.findByUserOrderByReservationDateDesc(user, pageable);
+	}
+}

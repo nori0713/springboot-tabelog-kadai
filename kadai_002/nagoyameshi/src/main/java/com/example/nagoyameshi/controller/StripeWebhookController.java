@@ -1,11 +1,17 @@
 package com.example.nagoyameshi.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.repository.UserRepository;
+import com.example.nagoyameshi.service.UserService;
+import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
+import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 
 @RestController
@@ -13,20 +19,26 @@ public class StripeWebhookController {
 
 	private final String endpointSecret = "your_webhook_secret";
 
+	@Autowired
+	private UserService userService;
+
+	@Autowired
+	private UserRepository userRepository;
+
 	@PostMapping("/stripe/webhook")
 	public String handleStripeEvent(@RequestBody String payload, @RequestHeader("Stripe-Signature") String sigHeader) {
 		Event event;
 
 		try {
 			event = Webhook.constructEvent(payload, sigHeader, endpointSecret);
-		} catch (Exception e) {
+		} catch (SignatureVerificationException e) {
 			return "Webhook Error: " + e.getMessage();
 		}
 
 		// イベントの処理
 		switch (event.getType()) {
 		case "checkout.session.completed":
-			// サブスクリプション成功時の処理
+			handleCheckoutSessionCompleted(event);
 			break;
 		case "invoice.payment_failed":
 			// 支払い失敗時の処理
@@ -38,6 +50,38 @@ public class StripeWebhookController {
 			return "Unhandled event type: " + event.getType();
 		}
 
-		return "";
+		return "Success";
+	}
+
+	private void handleCheckoutSessionCompleted(Event event) {
+		try {
+			// イベントデータからCheckoutSessionオブジェクトを取得
+			Session session = (Session) event.getDataObjectDeserializer().deserializeUnsafe();
+
+			// メールアドレスからユーザーを取得
+			String userEmail = session.getCustomerEmail();
+			User user = userRepository.findByEmail(userEmail);
+
+			if (user != null) {
+				// ユーザーのロールをROLE_PREMIUMに変更
+				userService.assignRole(user, "PREMIUM");
+
+				// サブスクリプションステータスをACTIVEに設定
+				user.setSubscriptionStatus("ACTIVE");
+
+				// ユーザー情報を更新
+				userRepository.save(user);
+
+				// 元のページにリダイレクトするためのURLがあるかを確認
+				String returnUrl = session.getSuccessUrl();
+				if (returnUrl != null && !returnUrl.isEmpty()) {
+					// 成功URLをユーザーに関連付けるか、何らかの形で保存・処理する
+					// 必要に応じて returnUrl を次のアクションに渡す処理を追加
+				}
+			}
+		} catch (Exception e) {
+			// エラーログを出力するか、適切なエラーハンドリングを行います
+			System.err.println("Error handling checkout.session.completed event: " + e.getMessage());
+		}
 	}
 }

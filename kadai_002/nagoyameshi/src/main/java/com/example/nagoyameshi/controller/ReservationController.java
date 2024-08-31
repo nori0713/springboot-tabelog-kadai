@@ -24,15 +24,21 @@ import com.example.nagoyameshi.form.ReservationRegisterForm;
 import com.example.nagoyameshi.repository.RestaurantRepository;
 import com.example.nagoyameshi.security.UserDetailsImpl;
 import com.example.nagoyameshi.service.ReservationService;
+import com.example.nagoyameshi.service.UserService;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @Controller
 public class ReservationController {
 	private final RestaurantRepository restaurantRepository;
 	private final ReservationService reservationService;
+	private final UserService userService; // UserServiceを追加
 
-	public ReservationController(RestaurantRepository restaurantRepository, ReservationService reservationService) {
+	public ReservationController(RestaurantRepository restaurantRepository, ReservationService reservationService,
+			UserService userService) {
 		this.restaurantRepository = restaurantRepository;
 		this.reservationService = reservationService;
+		this.userService = userService;
 	}
 
 	@GetMapping("/reservations")
@@ -51,8 +57,19 @@ public class ReservationController {
 			@ModelAttribute @Validated ReservationInputForm reservationInputForm,
 			BindingResult bindingResult,
 			RedirectAttributes redirectAttributes,
-			Model model) {
+			Model model,
+			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
 		Restaurant restaurant = restaurantRepository.getReferenceById(id);
+		User user = userDetailsImpl.getUser();
+
+		// 有料会員かどうかをチェック
+		if (!"PREMIUM".equals(user.getRole().getName())) {
+			// 無料会員なら決済ページにリダイレクト
+			String sessionUrl = userService.createSubscriptionSession((HttpServletRequest) model.asMap().get("request"),
+					user.getEmail());
+			return "redirect:" + sessionUrl;
+		}
+
 		Integer numberOfPeople = reservationInputForm.getNumberOfPeople();
 		Integer capacity = restaurant.getCapacity();
 
@@ -80,6 +97,14 @@ public class ReservationController {
 		Restaurant restaurant = restaurantRepository.getReferenceById(id);
 		User user = userDetailsImpl.getUser();
 
+		// 有料会員かどうかをチェック
+		if (!"PREMIUM".equals(user.getRole().getName())) {
+			// 無料会員なら決済ページにリダイレクト
+			String sessionUrl = userService.createSubscriptionSession((HttpServletRequest) model.asMap().get("request"),
+					user.getEmail());
+			return "redirect:" + sessionUrl;
+		}
+
 		LocalDate reservationDate = reservationInputForm.getReservationDate();
 		if (reservationDate == null) {
 			model.addAttribute("errorMessage", "予約日が選択されていません。");
@@ -96,7 +121,19 @@ public class ReservationController {
 	}
 
 	@PostMapping("/restaurants/{id}/reservations/create")
-	public String create(@ModelAttribute ReservationRegisterForm reservationRegisterForm) {
+	public String create(@ModelAttribute ReservationRegisterForm reservationRegisterForm,
+			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+			Model model) {
+		User user = userDetailsImpl.getUser();
+
+		// 有料会員かどうかをチェック
+		if (!"PREMIUM".equals(user.getRole().getName())) {
+			// 無料会員なら決済ページにリダイレクト
+			String sessionUrl = userService.createSubscriptionSession((HttpServletRequest) model.asMap().get("request"),
+					user.getEmail());
+			return "redirect:" + sessionUrl;
+		}
+
 		reservationService.create(reservationRegisterForm);
 
 		return "redirect:/reservations?reserved";

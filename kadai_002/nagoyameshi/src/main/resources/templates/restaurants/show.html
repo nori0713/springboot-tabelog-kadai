@@ -132,16 +132,20 @@
                                         </div>                                
                                     </div>
                                     
-                                    <div sec:authorize="isAnonymous()" class="col-lg-4 px-0 ps-lg-4 mb-4">                  
-                                        <div class="card">
-                                            <div class="card-body">                                                                                                                                                                                                                     
-                                                <p class="card-text">予約するには<a th:href="@{/login}">ログイン</a>が必要です。</p>                                                                                                                                            
-                                                <button type="submit" class="btn text-white shadow-sm w-100 nagoyameshi-btn" disabled>予約する</button>                                                                                                                
-                                            </div>
-                                        </div>  
-                                    </div>
-									
-									<div sec:authorize="isAuthenticated()" class="col-lg-4 px-0 ps-lg-4 mb-4">                  
+									<!-- 無料会員の場合の処理 -->
+									<div sec:authorize="hasRole('FREE')" class="col-lg-4 px-0 ps-lg-4 mb-4">                  
+									    <div class="card">
+									        <div class="card-body">                                                                                                                                                                                                                     
+									            <p class="card-text">予約機能は月額300円の有料会員になることで利用ができます。</p>                                                                                
+									            <form method="post" th:action="@{/user/subscribe}">
+									                <button type="submit" class="btn text-white shadow-sm w-100 nagoyameshi-btn">決済をする</button>
+									            </form>                                                                                                    
+									        </div>
+									    </div>  
+									</div>
+
+									<!-- 有料会員の場合の処理 -->
+									<div sec:authorize="hasRole('PREMIUM')" class="col-lg-4 px-0 ps-lg-4 mb-4">                  
 									    <div class="card">
 									        <div class="card-body"> 
 									            <form method="get" th:action="@{/restaurants/__${restaurant.getId()}__/reservations/input}" th:object="${reservationInputForm}">                                                                                                                                                                       

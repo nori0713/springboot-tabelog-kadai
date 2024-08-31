@@ -22,8 +22,7 @@ public class WebSecurityConfig {
 								"/restaurants", "/restaurants/{id}", "/restaurants/{id}/reviews", "/error")
 						.permitAll() // すべてのユーザーにアクセスを許可するURLに`/error`を追加
 						.requestMatchers("/admin/**").hasRole("ADMIN") // 管理者にのみアクセスを許可するURL
-						.requestMatchers("/premium/**").hasRole("PREMIUM") // プレミアム会員にのみアクセスを許可するURL
-						.requestMatchers("/free/**").hasRole("FREE") // 無料会員にのみアクセスを許可するURL
+						.requestMatchers("/reservations/**").hasRole("PREMIUM") // 有料会員にのみアクセスを許可する予約機能
 						.anyRequest().authenticated() // 上記以外のURLはログインが必要
 				)
 				.formLogin((form) -> form
