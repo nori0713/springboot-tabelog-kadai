@@ -23,8 +23,11 @@ public class WebSecurityConfig {
 						.permitAll() // すべてのユーザーにアクセスを許可するURLに`/error`を追加
 						.requestMatchers("/admin/**").hasRole("ADMIN") // 管理者にのみアクセスを許可するURL
 						.requestMatchers("/reservations/**").hasRole("PREMIUM") // 有料会員にのみアクセスを許可する予約機能
+						.requestMatchers("/stripe/webhook").permitAll() // Webhookエンドポイントのアクセスを許可
 						.anyRequest().authenticated() // 上記以外のURLはログインが必要
 				)
+				.csrf().ignoringRequestMatchers("/stripe/webhook") // WebhookエンドポイントでCSRF保護を無効化
+				.and()
 				.formLogin((form) -> form
 						.loginPage("/login") // ログインページのURL
 						.loginProcessingUrl("/login") // ログインフォームの送信先URL

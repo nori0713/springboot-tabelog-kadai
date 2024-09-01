@@ -1,0 +1,124 @@
+package com.example.nagoyameshi.service;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.example.nagoyameshi.entity.Role;
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.form.SignupForm;
+import com.example.nagoyameshi.form.UserEditForm;
+import com.example.nagoyameshi.repository.RoleRepository;
+import com.example.nagoyameshi.repository.UserRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
+
+@Service
+public class UserService {
+	private final UserRepository userRepository;
+	private final RoleRepository roleRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final StripeService stripeService;
+
+	public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder,
+			StripeService stripeService) {
+		this.userRepository = userRepository;
+		this.roleRepository = roleRepository;
+		this.passwordEncoder = passwordEncoder;
+		this.stripeService = stripeService;
+	}
+
+	@Transactional
+	public User create(SignupForm signupForm) {
+		User user = new User();
+
+		Role role;
+		if (signupForm.isPremiumSelected()) {
+			role = roleRepository.findByName("PREMIUM");
+			user.setSubscriptionStatus("INACTIVE");
+		} else {
+			role = roleRepository.findByName("FREE");
+			user.setSubscriptionStatus("INACTIVE");
+		}
+
+		user.setName(signupForm.getName());
+		user.setFurigana(signupForm.getFurigana());
+		user.setPostalCode(signupForm.getPostalCode());
+		user.setAddress(signupForm.getAddress());
+		user.setPhoneNumber(signupForm.getPhoneNumber());
+		user.setEmail(signupForm.getEmail());
+		user.setPassword(passwordEncoder.encode(signupForm.getPassword()));
+		user.setRole(role);
+		user.setEnabled(false);
+
+		return userRepository.save(user);
+	}
+
+	public String createSubscriptionSession(HttpServletRequest request, String userEmail) {
+		// StripeServiceのメソッドを呼び出す際に、HttpServletRequestとユーザーのメールを渡す
+		return stripeService.createSubscriptionSession(request, userEmail);
+	}
+
+	@Transactional
+	public void update(UserEditForm userEditForm) {
+		User user = userRepository.getReferenceById(userEditForm.getId());
+
+		user.setName(userEditForm.getName());
+		user.setFurigana(userEditForm.getFurigana());
+		user.setPostalCode(userEditForm.getPostalCode());
+		user.setAddress(userEditForm.getAddress());
+		user.setPhoneNumber(userEditForm.getPhoneNumber());
+		user.setEmail(userEditForm.getEmail());
+
+		userRepository.save(user);
+	}
+
+	public boolean isEmailRegistered(String email) {
+		User user = userRepository.findByEmail(email);
+		return user != null;
+	}
+
+	public boolean isSamePassword(String password, String passwordConfirmation) {
+		return password.equals(passwordConfirmation);
+	}
+
+	@Transactional
+	public void enableUser(User user) {
+		user.setEnabled(true);
+		userRepository.save(user);
+	}
+
+	public boolean isEmailChanged(UserEditForm userEditForm) {
+		User currentUser = userRepository.getReferenceById(userEditForm.getId());
+		return !userEditForm.getEmail().equals(currentUser.getEmail());
+	}
+
+	@Transactional
+	public void assignRole(User user, String roleName) {
+		Role role = roleRepository.findByName(roleName);
+		user.setRole(role);
+		userRepository.save(user);
+	}
+
+	@Transactional
+	public void upgradeToPremium(User user) {
+		Role premiumRole = roleRepository.findByName("PREMIUM");
+		user.setRole(premiumRole);
+		user.setSubscriptionStatus("ACTIVE");
+		userRepository.save(user);
+	}
+
+	@Transactional
+	public String handlePostVerification(User user, HttpServletRequest request) {
+		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
+			// プレミアム会員の場合はStripe決済ページへリダイレクト
+			return "redirect:" + createSubscriptionSession(request, user.getEmail());
+		} else {
+			// 無料会員の場合はアカウントを有効化し、ログインページへリダイレクト
+			enableUser(user);
+			user.setSubscriptionStatus("ACTIVE");
+			userRepository.save(user);
+			return "redirect:/login";
+		}
+	}
+}

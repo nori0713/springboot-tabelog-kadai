@@ -1,5 +1,7 @@
 package com.example.nagoyameshi.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,7 +19,9 @@ import com.stripe.net.Webhook;
 @RestController
 public class StripeWebhookController {
 
-	private final String endpointSecret = "your_webhook_secret";
+	private static final Logger logger = LoggerFactory.getLogger(StripeWebhookController.class);
+
+	private final String endpointSecret = "whsec_23f27dc8377279f8735576acf26de8fede9ee7ce09109486b7dc5f5be4b8d04b";
 
 	@Autowired
 	private UserService userService;
@@ -31,22 +35,26 @@ public class StripeWebhookController {
 
 		try {
 			event = Webhook.constructEvent(payload, sigHeader, endpointSecret);
+			logger.info("Webhook event constructed successfully: {}", event.getType());
 		} catch (SignatureVerificationException e) {
+			logger.error("Webhook signature verification failed: {}", e.getMessage());
 			return "Webhook Error: " + e.getMessage();
 		}
 
 		// イベントの処理
 		switch (event.getType()) {
 		case "checkout.session.completed":
+			logger.info("Processing checkout.session.completed event.");
 			handleCheckoutSessionCompleted(event);
 			break;
 		case "invoice.payment_failed":
-			// 支払い失敗時の処理
+			logger.warn("Payment failed for session: {}", event.getId());
 			break;
 		case "customer.subscription.deleted":
-			// サブスクリプションキャンセル時の処理
+			logger.warn("Subscription deleted for session: {}", event.getId());
 			break;
 		default:
+			logger.info("Unhandled event type: {}", event.getType());
 			return "Unhandled event type: " + event.getType();
 		}
 
@@ -60,28 +68,34 @@ public class StripeWebhookController {
 
 			// メールアドレスからユーザーを取得
 			String userEmail = session.getCustomerEmail();
+			logger.info("Checkout completed for email: {}", userEmail);
+
 			User user = userRepository.findByEmail(userEmail);
 
 			if (user != null) {
+				logger.info("User found: {}", user.getName());
+
 				// ユーザーのロールをROLE_PREMIUMに変更
-				userService.assignRole(user, "PREMIUM");
+				userService.assignRole(user, "ROLE_PREMIUM");
+				logger.info("Role changed to ROLE_PREMIUM for user: {}", user.getName());
 
 				// サブスクリプションステータスをACTIVEに設定
 				user.setSubscriptionStatus("ACTIVE");
 
 				// ユーザー情報を更新
 				userRepository.save(user);
+				logger.info("User updated with new role and subscription status.");
 
-				// 元のページにリダイレクトするためのURLがあるかを確認
+				// 成功URLがある場合はログ出力
 				String returnUrl = session.getSuccessUrl();
 				if (returnUrl != null && !returnUrl.isEmpty()) {
-					// 成功URLをユーザーに関連付けるか、何らかの形で保存・処理する
-					// 必要に応じて returnUrl を次のアクションに渡す処理を追加
+					logger.info("Success URL: {}", returnUrl);
 				}
+			} else {
+				logger.error("User not found for email: {}", userEmail);
 			}
 		} catch (Exception e) {
-			// エラーログを出力するか、適切なエラーハンドリングを行います
-			System.err.println("Error handling checkout.session.completed event: " + e.getMessage());
+			logger.error("Error handling checkout.session.completed event: {}", e.getMessage(), e);
 		}
 	}
 }

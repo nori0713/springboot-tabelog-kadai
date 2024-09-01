@@ -18,7 +18,7 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final RoleRepository roleRepository;
 	private final PasswordEncoder passwordEncoder;
-	private final StripeService stripeService; // StripeServiceを注入
+	private final StripeService stripeService;
 
 	public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder,
 			StripeService stripeService) {
@@ -32,14 +32,19 @@ public class UserService {
 	public User create(SignupForm signupForm) {
 		User user = new User();
 
-		// ロールの選択に基づいて適切なロールを割り当てる
 		Role role;
 		if (signupForm.isPremiumSelected()) {
-			role = roleRepository.findByName("PREMIUM");
-			user.setSubscriptionStatus("INACTIVE"); // プレミアム会員はサブスクリプションがアクティブになるまではINACTIVE
+			role = roleRepository.findByName("ROLE_PREMIUM");
+			if (role == null) {
+				throw new IllegalArgumentException("Role not found: ROLE_PREMIUM");
+			}
+			user.setSubscriptionStatus("INACTIVE");
 		} else {
-			role = roleRepository.findByName("FREE");
-			user.setSubscriptionStatus("INACTIVE"); // 無料会員も初期状態ではINACTIVEに設定
+			role = roleRepository.findByName("ROLE_FREE");
+			if (role == null) {
+				throw new IllegalArgumentException("Role not found: ROLE_FREE");
+			}
+			user.setSubscriptionStatus("INACTIVE");
 		}
 
 		user.setName(signupForm.getName());
@@ -50,13 +55,13 @@ public class UserService {
 		user.setEmail(signupForm.getEmail());
 		user.setPassword(passwordEncoder.encode(signupForm.getPassword()));
 		user.setRole(role);
-		user.setEnabled(false); // メール認証が完了するまで無効状態
+		user.setEnabled(false);
 
-		return userRepository.save(user); // ユーザー作成後に戻り値を返す
+		return userRepository.save(user);
 	}
 
-	// プレミアム会員の場合、StripeのセッションURLを生成する
 	public String createSubscriptionSession(HttpServletRequest request, String userEmail) {
+		// StripeServiceのメソッドを呼び出す際に、HttpServletRequestとユーザーのメールを渡す
 		return stripeService.createSubscriptionSession(request, userEmail);
 	}
 
@@ -74,51 +79,52 @@ public class UserService {
 		userRepository.save(user);
 	}
 
-	// メールアドレスが登録済みかどうかチェックする
 	public boolean isEmailRegistered(String email) {
 		User user = userRepository.findByEmail(email);
 		return user != null;
 	}
 
-	// パスワードとパスワード（確認用）の入力値が一致するかどうかをチェックする
 	public boolean isSamePassword(String password, String passwordConfirmation) {
 		return password.equals(passwordConfirmation);
 	}
 
-	// ユーザーを有効にする
 	@Transactional
 	public void enableUser(User user) {
 		user.setEnabled(true);
 		userRepository.save(user);
 	}
 
-	// メールアドレスが変更されたかどうかをチェックする
 	public boolean isEmailChanged(UserEditForm userEditForm) {
 		User currentUser = userRepository.getReferenceById(userEditForm.getId());
 		return !userEditForm.getEmail().equals(currentUser.getEmail());
 	}
 
-	// ユーザーにロールを割り当てるメソッド
 	@Transactional
 	public void assignRole(User user, String roleName) {
 		Role role = roleRepository.findByName(roleName);
-		user.setRole(role);
+		if (role != null) {
+			user.setRole(role);
+		} else {
+			throw new IllegalArgumentException("Role not found: " + roleName);
+		}
 		userRepository.save(user);
 	}
 
-	// ユーザーのロールをプレミアムにアップグレードし、サブスクリプションをアクティブ化する
 	@Transactional
 	public void upgradeToPremium(User user) {
-		Role premiumRole = roleRepository.findByName("PREMIUM");
-		user.setRole(premiumRole);
-		user.setSubscriptionStatus("ACTIVE");
-		userRepository.save(user);
+		Role premiumRole = roleRepository.findByName("ROLE_PREMIUM");
+		if (premiumRole != null) {
+			user.setRole(premiumRole);
+			user.setSubscriptionStatus("ACTIVE");
+			userRepository.save(user);
+		} else {
+			throw new IllegalArgumentException("Role not found: ROLE_PREMIUM");
+		}
 	}
 
-	// メール認証後の処理
 	@Transactional
 	public String handlePostVerification(User user, HttpServletRequest request) {
-		if ("PREMIUM".equals(user.getRole().getName())) {
+		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
 			// プレミアム会員の場合はStripe決済ページへリダイレクト
 			return "redirect:" + createSubscriptionSession(request, user.getEmail());
 		} else {

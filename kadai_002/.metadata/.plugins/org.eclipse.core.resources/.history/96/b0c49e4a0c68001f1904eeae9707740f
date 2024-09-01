@@ -1,0 +1,99 @@
+package com.example.nagoyameshi.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.repository.UserRepository;
+import com.example.nagoyameshi.service.UserService;
+import com.stripe.exception.SignatureVerificationException;
+import com.stripe.model.Event;
+import com.stripe.model.checkout.Session;
+import com.stripe.net.Webhook;
+
+@RestController
+public class StripeWebhookController {
+
+	private final String endpointSecret = "whsec_23f27dc8377279f8735576acf26de8fede9ee7ce09109486b7dc5f5be4b8d04b";
+
+	@Autowired
+	private UserService userService;
+
+	@Autowired
+	private UserRepository userRepository;
+
+	@PostMapping("/stripe/webhook")
+	public String handleStripeEvent(@RequestBody String payload, @RequestHeader("Stripe-Signature") String sigHeader) {
+		Event event;
+
+		try {
+			event = Webhook.constructEvent(payload, sigHeader, endpointSecret);
+		} catch (SignatureVerificationException e) {
+			// Webhookの検証に失敗した場合
+			System.err.println("Webhook signature verification failed: " + e.getMessage());
+			return "Webhook Error: " + e.getMessage();
+		}
+
+		// イベントの処理
+		switch (event.getType()) {
+		case "checkout.session.completed":
+			handleCheckoutSessionCompleted(event);
+			break;
+		case "invoice.payment_failed":
+			// 支払い失敗時の処理（必要に応じて追加）
+			System.out.println("Payment failed for session: " + event.getId());
+			break;
+		case "customer.subscription.deleted":
+			// サブスクリプションキャンセル時の処理（必要に応じて追加）
+			System.out.println("Subscription deleted for session: " + event.getId());
+			break;
+		default:
+			System.out.println("Unhandled event type: " + event.getType());
+			return "Unhandled event type: " + event.getType();
+		}
+
+		return "Success";
+	}
+
+	private void handleCheckoutSessionCompleted(Event event) {
+		try {
+			// イベントデータからCheckoutSessionオブジェクトを取得
+			Session session = (Session) event.getDataObjectDeserializer().deserializeUnsafe();
+
+			// メールアドレスからユーザーを取得
+			String userEmail = session.getCustomerEmail();
+			System.out.println("Checkout completed for email: " + userEmail);
+
+			User user = userRepository.findByEmail(userEmail);
+
+			if (user != null) {
+				System.out.println("User found: " + user.getName());
+
+				// ユーザーのロールをPREMIUMに変更
+				userService.assignRole(user, "PREMIUM");
+				System.out.println("Role changed to PREMIUM for user: " + user.getName());
+
+				// サブスクリプションステータスをACTIVEに設定
+				user.setSubscriptionStatus("ACTIVE");
+
+				// ユーザー情報を更新
+				userRepository.save(user);
+				System.out.println("User updated with new role and subscription status.");
+
+				// 成功URLがある場合はログ出力
+				String returnUrl = session.getSuccessUrl();
+				if (returnUrl != null && !returnUrl.isEmpty()) {
+					System.out.println("Success URL: " + returnUrl);
+				}
+			} else {
+				System.err.println("User not found for email: " + userEmail);
+			}
+		} catch (Exception e) {
+			// エラーハンドリング
+			System.err.println("Error handling checkout.session.completed event: " + e.getMessage());
+		}
+	}
+}

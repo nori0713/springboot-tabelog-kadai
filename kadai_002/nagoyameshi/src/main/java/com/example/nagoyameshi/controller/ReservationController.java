@@ -2,6 +2,7 @@ package com.example.nagoyameshi.controller;
 
 import java.time.LocalDate;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,24 +33,14 @@ import jakarta.servlet.http.HttpServletRequest;
 public class ReservationController {
 	private final RestaurantRepository restaurantRepository;
 	private final ReservationService reservationService;
-	private final UserService userService; // UserServiceを追加
+	private final UserService userService;
 
+	@Autowired
 	public ReservationController(RestaurantRepository restaurantRepository, ReservationService reservationService,
 			UserService userService) {
 		this.restaurantRepository = restaurantRepository;
 		this.reservationService = reservationService;
 		this.userService = userService;
-	}
-
-	@GetMapping("/reservations")
-	public String getReservations(Model model, @AuthenticationPrincipal UserDetailsImpl userDetails,
-			Pageable pageable) {
-		User user = userDetails.getUser();
-		Page<Reservation> reservationPage = reservationService.getReservationsForUser(user, pageable);
-
-		model.addAttribute("reservationPage", reservationPage);
-
-		return "reservations/index";
 	}
 
 	@GetMapping("/restaurants/{id}/reservations/input")
@@ -58,23 +49,27 @@ public class ReservationController {
 			BindingResult bindingResult,
 			RedirectAttributes redirectAttributes,
 			Model model,
-			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+			HttpServletRequest request) {
 		Restaurant restaurant = restaurantRepository.getReferenceById(id);
 		User user = userDetailsImpl.getUser();
 
-		// 有料会員かどうかをチェック
-		if (!"PREMIUM".equals(user.getRole().getName())) {
-			// 無料会員なら決済ページにリダイレクト
-			String sessionUrl = userService.createSubscriptionSession((HttpServletRequest) model.asMap().get("request"),
-					user.getEmail());
+		// ロールの確認をログに出力する
+		System.out.println("User Role: " + user.getRole().getName());
+
+		// 有料会員でない場合は決済ページへリダイレクト
+		if (!"ROLE_PREMIUM".equals(user.getRole().getName())) {
+			String sessionUrl = userService.createSubscriptionSession(request, user.getEmail());
 			return "redirect:" + sessionUrl;
 		}
 
+		// 有料会員の場合は予約フォームに進む
 		Integer numberOfPeople = reservationInputForm.getNumberOfPeople();
 		Integer capacity = restaurant.getCapacity();
 
 		if (numberOfPeople != null && !reservationService.isWithinCapacity(numberOfPeople, capacity)) {
-			FieldError fieldError = new FieldError(bindingResult.getObjectName(), "numberOfPeople", "予約人数が定員を超えています。");
+			FieldError fieldError = new FieldError(bindingResult.getObjectName(), "numberOfPeople",
+					"予約人数が定員を超えています。");
 			bindingResult.addError(fieldError);
 		}
 
@@ -97,14 +92,6 @@ public class ReservationController {
 		Restaurant restaurant = restaurantRepository.getReferenceById(id);
 		User user = userDetailsImpl.getUser();
 
-		// 有料会員かどうかをチェック
-		if (!"PREMIUM".equals(user.getRole().getName())) {
-			// 無料会員なら決済ページにリダイレクト
-			String sessionUrl = userService.createSubscriptionSession((HttpServletRequest) model.asMap().get("request"),
-					user.getEmail());
-			return "redirect:" + sessionUrl;
-		}
-
 		LocalDate reservationDate = reservationInputForm.getReservationDate();
 		if (reservationDate == null) {
 			model.addAttribute("errorMessage", "予約日が選択されていません。");
@@ -123,19 +110,28 @@ public class ReservationController {
 	@PostMapping("/restaurants/{id}/reservations/create")
 	public String create(@ModelAttribute ReservationRegisterForm reservationRegisterForm,
 			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
-			Model model) {
+			HttpServletRequest request) {
 		User user = userDetailsImpl.getUser();
 
-		// 有料会員かどうかをチェック
-		if (!"PREMIUM".equals(user.getRole().getName())) {
-			// 無料会員なら決済ページにリダイレクト
-			String sessionUrl = userService.createSubscriptionSession((HttpServletRequest) model.asMap().get("request"),
-					user.getEmail());
-			return "redirect:" + sessionUrl;
+		// 有料会員のみが予約可能
+		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
+			reservationService.create(reservationRegisterForm);
+			return "redirect:/reservations?reserved"; // 予約確定後、予約一覧ページにリダイレクト
 		}
 
-		reservationService.create(reservationRegisterForm);
+		// 無料会員は決済ページにリダイレクト
+		String sessionUrl = userService.createSubscriptionSession(request, user.getEmail());
+		return "redirect:" + sessionUrl;
+	}
 
-		return "redirect:/reservations?reserved";
+	@GetMapping("/reservations")
+	public String getReservations(Model model, @AuthenticationPrincipal UserDetailsImpl userDetails,
+			Pageable pageable) {
+		User user = userDetails.getUser();
+		Page<Reservation> reservationPage = reservationService.getReservationsForUser(user, pageable);
+
+		model.addAttribute("reservationPage", reservationPage);
+
+		return "reservations/index"; // このビューが存在することを確認してください
 	}
 }
