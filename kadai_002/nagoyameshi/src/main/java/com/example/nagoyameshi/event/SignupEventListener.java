@@ -2,6 +2,7 @@ package com.example.nagoyameshi.event;
 
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -14,6 +15,9 @@ import com.example.nagoyameshi.service.VerificationTokenService;
 public class SignupEventListener {
 	private final VerificationTokenService verificationTokenService;
 	private final JavaMailSender javaMailSender;
+
+	@Value("${spring.mail.from}")
+	private String fromAddress;
 
 	public SignupEventListener(VerificationTokenService verificationTokenService, JavaMailSender mailSender) {
 		this.verificationTokenService = verificationTokenService;
@@ -46,7 +50,7 @@ public class SignupEventListener {
 				+ "NAGOYAMESHIチーム", user.getName(), verificationUrl);
 
 		SimpleMailMessage mailMessage = new SimpleMailMessage();
-		mailMessage.setFrom("認証メールを送信したいメールアドレス"); // 送信者アドレスを明示的に設定
+		mailMessage.setFrom(fromAddress); // 送信者アドレスを設定ファイルから取得
 		mailMessage.setTo(recipientAddress);
 		mailMessage.setSubject(subject);
 		mailMessage.setText(message);
