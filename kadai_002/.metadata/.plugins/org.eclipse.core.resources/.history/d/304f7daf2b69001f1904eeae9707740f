@@ -17,7 +17,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ADD COLUMN subscription_status VARCHAR(50) NOT NULL DEFAULT 'INACTIVE';
 
 -- 飲食店データ --
-INSERT IGNORE INTO restaurants (id, name, image_name, description, price, postal_code, address, phone_number, category, capacity, created_at, updated_at)
+INSERT INTO restaurants (id, name, image_name, description, price, postal_code, address, phone_number, category, capacity, created_at, updated_at)
 VALUES 
 (1, '寿司屋', '001.jpg', '町で一番の寿司', 3000, '123-4567', '名古屋市寿司町123', '052-123-4567', '和食', 50, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (2, 'ラーメンハウス', '002.jpg', '美味しいラーメンとサイドメニュー', 1200, '123-4567', '名古屋市ラーメン通り456', '052-123-4568', '和食', 30, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
