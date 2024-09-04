@@ -167,18 +167,7 @@
 									            </form>                                                                     
 									        </div>
 									    </div>  
-									</div>   
-
-									<!-- 未ログインの場合の処理 -->
-									<div sec:authorize="isAnonymous()" class="col-lg-4 px-0 ps-lg-4 mb-4">                  
-									    <div class="card">
-									        <div class="card-body">                                                                                                                                                                                                                     
-									            <p class="card-text">予約機能は有料会員しか利用できません。有料会員登録をするか、有料会員でログインしてください。</p>                                                                                
-									            <a href="#" th:href="@{/signup}" class="btn text-white shadow-sm w-100 nagoyameshi-btn">会員登録</a>
-									            <a href="#" th:href="@{/login}" class="btn text-white shadow-sm w-100 nagoyameshi-btn mt-2">ログイン</a>                                                                                                     
-									        </div>
-									    </div>  
-									</div>                                                                                                                 
+									</div>                                                                                                                    
                                 </div>                                                                                             
                             </div>
 							<!-- レビューセクション -->
