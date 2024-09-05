@@ -3,6 +3,8 @@ package com.example.nagoyameshi.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -12,6 +14,7 @@ import com.example.nagoyameshi.entity.User;
 import com.example.nagoyameshi.repository.UserRepository;
 import com.example.nagoyameshi.service.UserService;
 import com.stripe.exception.SignatureVerificationException;
+import com.stripe.model.Customer;
 import com.stripe.model.Event;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
@@ -21,7 +24,8 @@ public class StripeWebhookController {
 
 	private static final Logger logger = LoggerFactory.getLogger(StripeWebhookController.class);
 
-	private final String endpointSecret = "whsec_23f27dc8377279f8735576acf26de8fede9ee7ce09109486b7dc5f5be4b8d04b";
+	@Value("${stripe.webhook.secret}")
+	private String endpointSecret;
 
 	@Autowired
 	private UserService userService;
@@ -30,7 +34,8 @@ public class StripeWebhookController {
 	private UserRepository userRepository;
 
 	@PostMapping("/stripe/webhook")
-	public String handleStripeEvent(@RequestBody String payload, @RequestHeader("Stripe-Signature") String sigHeader) {
+	public ResponseEntity<String> handleStripeEvent(@RequestBody String payload,
+			@RequestHeader("Stripe-Signature") String sigHeader) {
 		Event event;
 
 		try {
@@ -38,7 +43,7 @@ public class StripeWebhookController {
 			logger.info("Webhook event constructed successfully: {}", event.getType());
 		} catch (SignatureVerificationException e) {
 			logger.error("Webhook signature verification failed: {}", e.getMessage());
-			return "Webhook Error: " + e.getMessage();
+			return ResponseEntity.status(400).body("Webhook Error: " + e.getMessage());
 		}
 
 		// イベントの処理
@@ -55,10 +60,10 @@ public class StripeWebhookController {
 			break;
 		default:
 			logger.info("Unhandled event type: {}", event.getType());
-			return "Unhandled event type: " + event.getType();
+			return ResponseEntity.ok("Unhandled event type: " + event.getType());
 		}
 
-		return "Success";
+		return ResponseEntity.ok("Success");
 	}
 
 	private void handleCheckoutSessionCompleted(Event event) {
@@ -68,6 +73,10 @@ public class StripeWebhookController {
 
 			// メールアドレスからユーザーを取得
 			String userEmail = session.getCustomerEmail();
+			if (userEmail == null) {
+				Customer customer = Customer.retrieve(session.getCustomer());
+				userEmail = customer.getEmail();
+			}
 			logger.info("Checkout completed for email: {}", userEmail);
 
 			User user = userRepository.findByEmail(userEmail);
