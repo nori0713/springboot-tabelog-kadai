@@ -17,16 +17,53 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // サーバーから受け取った営業時間を利用して予約時間を生成
-    const openingTime = /*[[${formattedOpeningTime}]]*/ '09:00'; // デフォルト値を持たせる
-    const closingTime = /*[[${formattedClosingTime}]]*/ '22:00';
-
-    const reservationTimeInput = document.querySelector('#reservationTime');
-    if (reservationTimeInput) {
-        updateReservationTime(openingTime, closingTime); // ページ読み込み時に初期化
+    // 開店時間のflatpickr設定
+    const openingTimeInput = document.querySelector('#openingTime');
+    if (openingTimeInput) {
+        flatpickr(openingTimeInput, {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            defaultHour: 9, // デフォルトを9時に設定
+            minuteIncrement: 60 // 60分刻み
+        });
     }
 
-    function updateReservationTime(openingTime, closingTime) {
+    // 閉店時間のflatpickr設定
+    const closingTimeInput = document.querySelector('#closingTime');
+    if (closingTimeInput) {
+        flatpickr(closingTimeInput, {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            defaultHour: 22, // デフォルトを22時に設定
+            minuteIncrement: 60
+        });
+    }
+
+    // 予約時間の更新関数
+    const reservationTimeInput = document.querySelector('#reservationTime');
+    if (reservationTimeInput) {
+        updateReservationTime(); // ページ読み込み時に初期化
+    }
+
+    // 開店・閉店時間が変更された際に予約時間を更新
+    document.querySelector('#openingTime')?.addEventListener('change', function() {
+        updateReservationTime();
+    });
+
+    document.querySelector('#closingTime')?.addEventListener('change', function() {
+        updateReservationTime();
+    });
+
+    // 予約時間の選択肢を更新する関数
+    function updateReservationTime() {
+        const openingTime = document.querySelector('#openingTime')?.value || '09:00';
+        const closingTime = document.querySelector('#closingTime')?.value || '22:00';
+
+        // プルダウン内のオプションを更新
         let timeOptions = [];
         let currentTime = openingTime;
 
@@ -46,6 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 時間をインクリメントするヘルパー関数 (HH:mm形式で1時間加算)
     function incrementTime(time, hours) {
         let [hour, minute] = time.split(':').map(Number);
         hour = (hour + hours) % 24;

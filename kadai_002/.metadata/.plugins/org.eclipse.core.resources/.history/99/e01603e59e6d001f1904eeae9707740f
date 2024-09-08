@@ -45,16 +45,13 @@ public class ReservationController {
 		Restaurant restaurant = restaurantRepository.getReferenceById(id);
 		User user = userDetailsImpl.getUser();
 
-		// 予約可能な時間リストを生成してモデルに追加
+		// モデルに `reservationInputForm` を追加
+		model.addAttribute("reservationInputForm", new ReservationInputForm());
+
+		// 営業時間内の時間リストを作成
 		List<LocalTime> availableTimes = getAvailableTimes(restaurant.getOpeningTime(), restaurant.getClosingTime());
 		model.addAttribute("availableTimes", availableTimes);
 
-		// 営業時間をビューに渡す
-		model.addAttribute("openingTime", restaurant.getOpeningTime().toString());
-		model.addAttribute("closingTime", restaurant.getClosingTime().toString());
-
-		// 予約フォームとレストラン、ユーザー情報をモデルに追加
-		model.addAttribute("reservationInputForm", new ReservationInputForm());
 		model.addAttribute("restaurant", restaurant);
 		model.addAttribute("user", user);
 
@@ -64,13 +61,6 @@ public class ReservationController {
 	// 営業時間内の予約可能な時間を生成
 	private List<LocalTime> getAvailableTimes(LocalTime openingTime, LocalTime closingTime) {
 		List<LocalTime> times = new ArrayList<>();
-
-		// 営業時間がnullでないか確認
-		if (openingTime == null || closingTime == null) {
-			System.out.println("Opening or closing time is null");
-			return times;
-		}
-
 		LocalTime time = openingTime;
 		while (time.isBefore(closingTime) || time.equals(closingTime)) {
 			times.add(time);
@@ -116,7 +106,7 @@ public class ReservationController {
 			return "restaurants/show"; // エラー表示のために再度フォームを表示
 		}
 
-		// 確認ページにリダイレクト
+		// エラーがなければ確認ページにリダイレクト
 		redirectAttributes.addFlashAttribute("reservationInputForm", reservationInputForm);
 		return "redirect:/restaurants/" + id + "/reservations/confirm";
 	}

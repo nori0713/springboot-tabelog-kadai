@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.nagoyameshi.entity.Restaurant;
-import com.example.nagoyameshi.form.ReservationInputForm;
 import com.example.nagoyameshi.repository.RestaurantRepository;
 import com.example.nagoyameshi.security.UserDetailsImpl;
 
@@ -125,7 +124,6 @@ public class RestaurantController {
 		// フォーマット済みの時間をモデルに追加
 		model.addAttribute("formattedOpeningTime", formattedOpeningTime);
 		model.addAttribute("formattedClosingTime", formattedClosingTime);
-		model.addAttribute("reservationInputForm", new ReservationInputForm());
 		model.addAttribute("restaurant", restaurant);
 
 		return "restaurants/show";

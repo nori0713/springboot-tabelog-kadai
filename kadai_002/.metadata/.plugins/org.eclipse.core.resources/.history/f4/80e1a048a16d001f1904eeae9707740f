@@ -1,0 +1,70 @@
+document.addEventListener('DOMContentLoaded', function() {
+    let maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 3);
+
+    let minDate = new Date();
+    minDate.setDate(minDate.getDate() + 1);
+
+    const reservationDateInput = document.querySelector('#reservationDate');
+    if (reservationDateInput) {
+        flatpickr(reservationDateInput, {
+            locale: 'ja',
+            minDate: minDate,
+            maxDate: maxDate,
+            dateFormat: "Y-m-d",
+            defaultDate: minDate
+        });
+    }
+
+    const openingTimeInput = document.querySelector('#openingTime');
+    if (openingTimeInput) {
+        flatpickr(openingTimeInput, {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            defaultHour: 9,
+            minuteIncrement: 60
+        });
+    }
+
+    const closingTimeInput = document.querySelector('#closingTime');
+    if (closingTimeInput) {
+        flatpickr(closingTimeInput, {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            defaultHour: 22,
+            minuteIncrement: 60
+        });
+    }
+
+    const reservationTimeInput = document.querySelector('#reservationTime');
+    if (reservationTimeInput) {
+        updateReservationTime();
+    }
+
+    document.querySelector('#openingTime')?.addEventListener('change', function() {
+        updateReservationTime();
+    });
+
+    document.querySelector('#closingTime')?.addEventListener('change', function() {
+        updateReservationTime();
+    });
+
+    function updateReservationTime() {
+        const openingTime = document.querySelector('#openingTime')?.value || '09:00';
+        const closingTime = document.querySelector('#closingTime')?.value || '22:00';
+
+        flatpickr(reservationTimeInput, {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            minTime: openingTime,
+            maxTime: closingTime,
+            minuteIncrement: 60
+        });
+    }
+});

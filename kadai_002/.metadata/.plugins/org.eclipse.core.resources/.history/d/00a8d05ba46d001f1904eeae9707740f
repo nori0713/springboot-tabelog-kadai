@@ -43,22 +43,23 @@ public class ReservationController {
 	public String input(@PathVariable(name = "id") Integer id, Model model,
 			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
 		Restaurant restaurant = restaurantRepository.getReferenceById(id);
-		User user = userDetailsImpl.getUser();
 
-		// 予約可能な時間リストを生成してモデルに追加
-		List<LocalTime> availableTimes = getAvailableTimes(restaurant.getOpeningTime(), restaurant.getClosingTime());
+		// 営業開始時間と終了時間を取得
+		LocalTime openingTime = restaurant.getOpeningTime();
+		LocalTime closingTime = restaurant.getClosingTime();
+
+		// 30分毎の時間リストを作成
+		List<LocalTime> availableTimes = new ArrayList<>();
+		LocalTime time = openingTime;
+		while (time.isBefore(closingTime) || time.equals(closingTime)) {
+			availableTimes.add(time);
+			time = time.plusMinutes(30); // 30分増加
+		}
+
 		model.addAttribute("availableTimes", availableTimes);
-
-		// 営業時間をビューに渡す
-		model.addAttribute("openingTime", restaurant.getOpeningTime().toString());
-		model.addAttribute("closingTime", restaurant.getClosingTime().toString());
-
-		// 予約フォームとレストラン、ユーザー情報をモデルに追加
+		// 他のモデル属性も必要に応じて追加
 		model.addAttribute("reservationInputForm", new ReservationInputForm());
-		model.addAttribute("restaurant", restaurant);
-		model.addAttribute("user", user);
 
-		return "restaurants/show"; // 予約フォームを表示
 	}
 
 	// 営業時間内の予約可能な時間を生成

@@ -28,37 +28,39 @@ import com.example.nagoyameshi.service.UserService;
 @Controller
 public class ReservationController {
 
-	private final RestaurantRepository restaurantRepository;
-	private final ReservationService reservationService;
-	private final UserService userService;
+    private final RestaurantRepository restaurantRepository;
+    private final ReservationService reservationService;
+    private final UserService userService;
 
-	public ReservationController(RestaurantRepository restaurantRepository, ReservationService reservationService,
-			UserService userService) {
-		this.restaurantRepository = restaurantRepository;
-		this.reservationService = reservationService;
-		this.userService = userService;
-	}
+    public ReservationController(RestaurantRepository restaurantRepository,
+                                 ReservationService reservationService,
+                                 UserService userService) {
+        this.restaurantRepository = restaurantRepository;
+        this.reservationService = reservationService;
+        this.userService = userService;
+    }
 
 	@GetMapping("/restaurants/{id}/reservations/input")
-	public String input(@PathVariable(name = "id") Integer id, Model model,
-			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
-		Restaurant restaurant = restaurantRepository.getReferenceById(id);
-		User user = userDetailsImpl.getUser();
+    public String input(@PathVariable(name = "id") Integer id, Model model,
+                        @AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+        Restaurant restaurant = restaurantRepository.getReferenceById(id);
 
-		// 予約可能な時間リストを生成してモデルに追加
-		List<LocalTime> availableTimes = getAvailableTimes(restaurant.getOpeningTime(), restaurant.getClosingTime());
-		model.addAttribute("availableTimes", availableTimes);
+        // 営業開始時間と終了時間を取得
+        LocalTime openingTime = restaurant.getOpeningTime();
+        LocalTime closingTime = restaurant.getClosingTime();
 
-		// 営業時間をビューに渡す
-		model.addAttribute("openingTime", restaurant.getOpeningTime().toString());
-		model.addAttribute("closingTime", restaurant.getClosingTime().toString());
+        // 30分毎の時間リストを作成
+        List<LocalTime> availableTimes = new ArrayList<>();
+        LocalTime time = openingTime;
+        while (time.isBefore(closingTime) || time.equals(closingTime)) {
+            availableTimes.add(time);
+            time = time.plusMinutes(30); // 30分増加
+        }
 
-		// 予約フォームとレストラン、ユーザー情報をモデルに追加
-		model.addAttribute("reservationInputForm", new ReservationInputForm());
-		model.addAttribute("restaurant", restaurant);
-		model.addAttribute("user", user);
+        model.addAttribute("availableTimes", availableTimes);
+        // 他のモデル属性も必要に応じて追加
+        model.addAttribute("reservationInputForm", new ReservationInputForm());
 
-		return "restaurants/show"; // 予約フォームを表示
 	}
 
 	// 営業時間内の予約可能な時間を生成

@@ -1,6 +1,7 @@
 package com.example.nagoyameshi.controller;
 
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,38 +40,42 @@ public class ReservationController {
 		this.userService = userService;
 	}
 
-	@GetMapping("/restaurants/{id}/reservations/input")
-	public String input(@PathVariable(name = "id") Integer id, Model model,
+	@GetMapping("/restaurants/{id}")
+	public String show(@PathVariable(name = "id") Integer id, Model model,
 			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
-		Restaurant restaurant = restaurantRepository.getReferenceById(id);
-		User user = userDetailsImpl.getUser();
+		// レストランを取得
+		Restaurant restaurant = restaurantRepository.findById(id).orElse(null);
 
-		// 予約可能な時間リストを生成してモデルに追加
+		if (restaurant == null) {
+			model.addAttribute("errorMessage", "指定されたレストランが見つかりませんでした。");
+			return "errorPage";
+		}
+
+		// LocalTimeをStringにフォーマット
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+		String formattedOpeningTime = restaurant.getOpeningTime() != null
+				? restaurant.getOpeningTime().format(timeFormatter)
+				: null;
+		String formattedClosingTime = restaurant.getClosingTime() != null
+				? restaurant.getClosingTime().format(timeFormatter)
+				: null;
+
+		// フォーマット済みの時間をモデルに追加
+		model.addAttribute("formattedOpeningTime", formattedOpeningTime);
+		model.addAttribute("formattedClosingTime", formattedClosingTime);
+		model.addAttribute("reservationInputForm", new ReservationInputForm());
+		model.addAttribute("restaurant", restaurant);
+
+		// 営業時間内の予約可能な時間を生成し、モデルに追加
 		List<LocalTime> availableTimes = getAvailableTimes(restaurant.getOpeningTime(), restaurant.getClosingTime());
 		model.addAttribute("availableTimes", availableTimes);
 
-		// 営業時間をビューに渡す
-		model.addAttribute("openingTime", restaurant.getOpeningTime().toString());
-		model.addAttribute("closingTime", restaurant.getClosingTime().toString());
-
-		// 予約フォームとレストラン、ユーザー情報をモデルに追加
-		model.addAttribute("reservationInputForm", new ReservationInputForm());
-		model.addAttribute("restaurant", restaurant);
-		model.addAttribute("user", user);
-
-		return "restaurants/show"; // 予約フォームを表示
+		return "restaurants/show";
 	}
 
 	// 営業時間内の予約可能な時間を生成
 	private List<LocalTime> getAvailableTimes(LocalTime openingTime, LocalTime closingTime) {
 		List<LocalTime> times = new ArrayList<>();
-
-		// 営業時間がnullでないか確認
-		if (openingTime == null || closingTime == null) {
-			System.out.println("Opening or closing time is null");
-			return times;
-		}
-
 		LocalTime time = openingTime;
 		while (time.isBefore(closingTime) || time.equals(closingTime)) {
 			times.add(time);
@@ -116,7 +121,7 @@ public class ReservationController {
 			return "restaurants/show"; // エラー表示のために再度フォームを表示
 		}
 
-		// 確認ページにリダイレクト
+		// エラーがなければ確認ページにリダイレクト
 		redirectAttributes.addFlashAttribute("reservationInputForm", reservationInputForm);
 		return "redirect:/restaurants/" + id + "/reservations/confirm";
 	}

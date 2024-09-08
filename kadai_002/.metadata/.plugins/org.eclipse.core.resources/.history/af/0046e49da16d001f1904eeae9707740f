@@ -41,24 +41,24 @@ public class ReservationController {
 
 	@GetMapping("/restaurants/{id}/reservations/input")
 	public String input(@PathVariable(name = "id") Integer id, Model model,
-			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
-		Restaurant restaurant = restaurantRepository.getReferenceById(id);
-		User user = userDetailsImpl.getUser();
+	        @AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+	    Restaurant restaurant = restaurantRepository.getReferenceById(id);
+	    User user = userDetailsImpl.getUser();
 
-		// 予約可能な時間リストを生成してモデルに追加
-		List<LocalTime> availableTimes = getAvailableTimes(restaurant.getOpeningTime(), restaurant.getClosingTime());
-		model.addAttribute("availableTimes", availableTimes);
+	    // 予約可能な時間リストを生成してモデルに追加
+	    List<LocalTime> availableTimes = getAvailableTimes(restaurant.getOpeningTime(), restaurant.getClosingTime());
+	    model.addAttribute("availableTimes", availableTimes);
 
-		// 営業時間をビューに渡す
-		model.addAttribute("openingTime", restaurant.getOpeningTime().toString());
-		model.addAttribute("closingTime", restaurant.getClosingTime().toString());
+	    // 営業時間をビューに渡す
+	    model.addAttribute("openingTime", restaurant.getOpeningTime().toString());
+	    model.addAttribute("closingTime", restaurant.getClosingTime().toString());
 
-		// 予約フォームとレストラン、ユーザー情報をモデルに追加
-		model.addAttribute("reservationInputForm", new ReservationInputForm());
-		model.addAttribute("restaurant", restaurant);
-		model.addAttribute("user", user);
+	    // 予約フォームとレストラン、ユーザー情報をモデルに追加
+	    model.addAttribute("reservationInputForm", new ReservationInputForm());
+	    model.addAttribute("restaurant", restaurant);
+	    model.addAttribute("user", user);
 
-		return "restaurants/show"; // 予約フォームを表示
+	    return "restaurants/show"; // 予約フォームを表示
 	}
 
 	// 営業時間内の予約可能な時間を生成

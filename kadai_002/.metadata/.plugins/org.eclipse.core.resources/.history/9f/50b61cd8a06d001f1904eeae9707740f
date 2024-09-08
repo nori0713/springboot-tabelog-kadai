@@ -49,10 +49,6 @@ public class ReservationController {
 		List<LocalTime> availableTimes = getAvailableTimes(restaurant.getOpeningTime(), restaurant.getClosingTime());
 		model.addAttribute("availableTimes", availableTimes);
 
-		// 営業時間をビューに渡す
-		model.addAttribute("openingTime", restaurant.getOpeningTime().toString());
-		model.addAttribute("closingTime", restaurant.getClosingTime().toString());
-
 		// 予約フォームとレストラン、ユーザー情報をモデルに追加
 		model.addAttribute("reservationInputForm", new ReservationInputForm());
 		model.addAttribute("restaurant", restaurant);
@@ -64,13 +60,6 @@ public class ReservationController {
 	// 営業時間内の予約可能な時間を生成
 	private List<LocalTime> getAvailableTimes(LocalTime openingTime, LocalTime closingTime) {
 		List<LocalTime> times = new ArrayList<>();
-
-		// 営業時間がnullでないか確認
-		if (openingTime == null || closingTime == null) {
-			System.out.println("Opening or closing time is null");
-			return times;
-		}
-
 		LocalTime time = openingTime;
 		while (time.isBefore(closingTime) || time.equals(closingTime)) {
 			times.add(time);

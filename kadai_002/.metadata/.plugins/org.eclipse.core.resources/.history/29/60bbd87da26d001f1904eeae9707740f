@@ -17,15 +17,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // サーバーから受け取った営業時間を利用して予約時間を生成
-    const openingTime = /*[[${formattedOpeningTime}]]*/ '09:00'; // デフォルト値を持たせる
-    const closingTime = /*[[${formattedClosingTime}]]*/ '22:00';
+    // 開店・閉店時間をサーバーから取得し、プルダウンの時間範囲を設定
+    const openingTime = document.querySelector('#openingTime')?.value || '09:00';
+    const closingTime = document.querySelector('#closingTime')?.value || '22:00';
 
     const reservationTimeInput = document.querySelector('#reservationTime');
     if (reservationTimeInput) {
         updateReservationTime(openingTime, closingTime); // ページ読み込み時に初期化
     }
 
+    // 予約時間の選択肢を更新する関数
     function updateReservationTime(openingTime, closingTime) {
         let timeOptions = [];
         let currentTime = openingTime;
@@ -46,6 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 時間をインクリメントするヘルパー関数 (HH:mm形式で1時間加算)
     function incrementTime(time, hours) {
         let [hour, minute] = time.split(':').map(Number);
         hour = (hour + hours) % 24;
