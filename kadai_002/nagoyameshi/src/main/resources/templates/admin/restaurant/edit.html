@@ -4,6 +4,8 @@
     <div th:replace="~{fragment :: meta}"></div>
     <div th:replace="~{fragment :: styles}"></div>
     <title>飲食店編集</title>
+    <!-- Flatpickrのスタイルシート -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 <body>
     <div class="nagoyameshi-wrapper">
@@ -46,12 +48,12 @@
                                 </div>
                             </div>   
                             
-							<!-- 選択された画像の表示 -->
-							<div class="row" id="imagePreview">
-							    <img th:if="${imageName != null and !#strings.isEmpty(imageName)}" 
-							         th:src="@{/storage/images/{imageName}(imageName=${imageName})}" 
-							         alt="現在の画像" class="img-thumbnail">
-							</div>                               
+                            <!-- 選択された画像の表示 -->
+                            <div class="row" id="imagePreview">
+                                <img th:if="${imageName != null and !#strings.isEmpty(imageName)}" 
+                                     th:src="@{/storage/images/{imageName}(imageName=${imageName})}" 
+                                     alt="現在の画像" class="img-thumbnail">
+                            </div>                               
                             
                             <!-- 説明 -->
                             <div class="form-group row mb-3">
@@ -75,16 +77,23 @@
                                 </div>                                    
                             </div>
                             
-                            <!-- カテゴリ -->
-                            <div class="form-group row mb-3">
-                                <div class="col-md-4">
-                                    <label for="category" class="col-form-label text-md-left fw-bold">カテゴリ</label>
-                                </div> 
-                                <div class="col-md-8">
-                                    <div th:if="${#fields.hasErrors('category')}" class="text-danger small mb-2" th:errors="*{category}"></div>
-                                    <input type="text" class="form-control" th:field="*{category}">                                
-                                </div>                                    
-                            </div>
+							<!-- カテゴリ -->
+							<div class="form-group row mb-3">
+							    <div class="col-md-4">
+							        <label for="category" class="col-form-label text-md-left fw-bold">カテゴリ</label>
+							    </div>
+							    <div class="col-md-8">
+							        <div th:if="${#fields.hasErrors('category')}" class="text-danger small mb-2" th:errors="*{category}"></div>
+							        <select class="form-control form-select" th:field="*{category}">
+							            <option value="" hidden>カテゴリを選択してください</option>
+							            <option value="和食" th:selected="${category == '和食'}">和食</option>
+							            <option value="洋食" th:selected="${category == '洋食'}">洋食</option>
+							            <option value="イタリアン" th:selected="${category == 'イタリアン'}">イタリアン</option>
+							            <option value="フレンチ" th:selected="${category == 'フレンチ'}">フレンチ</option>
+							            <option value="中華" th:selected="${category == '中華'}">中華</option>
+							        </select>
+							    </div>
+							</div>
                             
                             <!-- 郵便番号 -->
                             <div class="form-group row mb-3">
@@ -119,16 +128,38 @@
                                 </div>
                             </div>
                             
-							<!-- 予約最大人数 -->
-							<div class="form-group row mb-3">
-							    <div class="col-md-4">
-							        <label for="capacity" class="col-form-label text-md-left fw-bold">予約最大人数</label>
-							    </div>
-							    <div class="col-md-8">
-							        <div th:if="${#fields.hasErrors('capacity')}" class="text-danger small mb-2" th:errors="*{capacity}"></div>
-							        <input type="number" class="form-control" th:field="*{capacity}" min="1">
-							    </div>
-							</div>
+                            <!-- 予約最大人数 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-md-4">
+                                    <label for="capacity" class="col-form-label text-md-left fw-bold">予約最大人数</label>
+                                </div>
+                                <div class="col-md-8">
+                                    <div th:if="${#fields.hasErrors('capacity')}" class="text-danger small mb-2" th:errors="*{capacity}"></div>
+                                    <input type="number" class="form-control" th:field="*{capacity}" min="1">
+                                </div>
+                            </div>
+
+                            <!-- 開店時間 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-md-4">
+                                    <label for="openingTime" class="col-form-label text-md-left fw-bold">開店時間</label>
+                                </div>
+                                <div class="col-md-8">
+                                    <div th:if="${#fields.hasErrors('openingTime')}" class="text-danger small mb-2" th:errors="*{openingTime}"></div>
+                                    <input type="text" id="openingTime" class="form-control flatpickr" th:field="*{openingTime}">
+                                </div>
+                            </div>
+
+                            <!-- 閉店時間 -->
+                            <div class="form-group row mb-3">
+                                <div class="col-md-4">
+                                    <label for="closingTime" class="col-form-label text-md-left fw-bold">閉店時間</label>
+                                </div>
+                                <div class="col-md-8">
+                                    <div th:if="${#fields.hasErrors('closingTime')}" class="text-danger small mb-2" th:errors="*{closingTime}"></div>
+                                    <input type="text" id="closingTime" class="form-control flatpickr" th:field="*{closingTime}">
+                                </div>
+                            </div>
                                                                                                                  
                             <div class="form-group d-flex justify-content-center my-4">
                                 <button type="submit" class="btn text-white shadow-sm w-50 nagoyameshi-btn">更新</button>
@@ -146,5 +177,7 @@
     <div th:replace="~{fragment :: scripts}"></div>
     <!-- プレビュー用のJavaScriptファイル -->
     <script th:src="@{/js/preview.js}"></script>
+    <!-- FlatpickrのJavaScriptファイル -->
+    <script th:src="@{/js/flatpickr.js}"></script> <!-- ここでflatpickr.jsを呼び出し -->
 </body>
 </html>

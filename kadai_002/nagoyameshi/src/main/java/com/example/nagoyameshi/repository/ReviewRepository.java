@@ -18,4 +18,8 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
 	public long countByRestaurant(Restaurant restaurant);
 
 	public Page<Review> findByRestaurantOrderByCreatedAtDesc(Restaurant restaurant, Pageable pageable);
+
+	// レストラン名またはユーザー名でレビューを検索
+	Page<Review> findByRestaurantNameContainingOrUserNameContaining(String restaurantName, String userName,
+			Pageable pageable);
 }

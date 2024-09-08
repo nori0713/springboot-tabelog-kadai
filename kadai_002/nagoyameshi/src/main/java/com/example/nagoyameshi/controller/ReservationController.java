@@ -1,10 +1,9 @@
 package com.example.nagoyameshi.controller;
 
-import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.example.nagoyameshi.entity.Reservation;
 import com.example.nagoyameshi.entity.Restaurant;
 import com.example.nagoyameshi.entity.User;
 import com.example.nagoyameshi.form.ReservationInputForm;
@@ -27,15 +25,13 @@ import com.example.nagoyameshi.security.UserDetailsImpl;
 import com.example.nagoyameshi.service.ReservationService;
 import com.example.nagoyameshi.service.UserService;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 @Controller
 public class ReservationController {
+
 	private final RestaurantRepository restaurantRepository;
 	private final ReservationService reservationService;
 	private final UserService userService;
 
-	@Autowired
 	public ReservationController(RestaurantRepository restaurantRepository, ReservationService reservationService,
 			UserService userService) {
 		this.restaurantRepository = restaurantRepository;
@@ -45,93 +41,115 @@ public class ReservationController {
 
 	@GetMapping("/restaurants/{id}/reservations/input")
 	public String input(@PathVariable(name = "id") Integer id,
-			@ModelAttribute @Validated ReservationInputForm reservationInputForm,
-			BindingResult bindingResult,
-			RedirectAttributes redirectAttributes,
 			Model model,
-			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
-			HttpServletRequest request) {
+			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
 		Restaurant restaurant = restaurantRepository.getReferenceById(id);
 		User user = userDetailsImpl.getUser();
 
-		// ロールの確認をログに出力する
-		System.out.println("User Role: " + user.getRole().getName());
+		// モデルに `reservationInputForm` を追加
+		model.addAttribute("reservationInputForm", new ReservationInputForm());
+
+		// 営業時間内の時間リストを作成
+		List<LocalTime> availableTimes = getAvailableTimes(restaurant.getOpeningTime(), restaurant.getClosingTime());
+		model.addAttribute("availableTimes", availableTimes);
+
+		model.addAttribute("restaurant", restaurant);
+		model.addAttribute("user", user);
+
+		return "restaurants/show"; // 予約フォームを表示
+	}
+
+	private List<LocalTime> getAvailableTimes(LocalTime openingTime, LocalTime closingTime) {
+		List<LocalTime> times = new ArrayList<>();
+		LocalTime time = openingTime;
+		while (time.isBefore(closingTime) || time.equals(closingTime)) {
+			times.add(time);
+			time = time.plusHours(1);
+		}
+		return times;
+	}
+
+	@PostMapping("/restaurants/{id}/reservations/input")
+	public String handleReservationInput(@PathVariable(name = "id") Integer id,
+			@ModelAttribute("reservationInputForm") @Validated ReservationInputForm reservationInputForm,
+			BindingResult bindingResult,
+			Model model,
+			RedirectAttributes redirectAttributes,
+			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+		Restaurant restaurant = restaurantRepository.getReferenceById(id);
+		User user = userDetailsImpl.getUser();
 
 		// 有料会員でない場合は決済ページへリダイレクト
 		if (!"ROLE_PREMIUM".equals(user.getRole().getName())) {
-			String sessionUrl = userService.createSubscriptionSession(request, user.getEmail());
+			String sessionUrl = userService.createSubscriptionSession(null, user.getEmail());
 			return "redirect:" + sessionUrl;
 		}
 
-		// 有料会員の場合は予約フォームに進む
-		Integer numberOfPeople = reservationInputForm.getNumberOfPeople();
-		Integer capacity = restaurant.getCapacity();
-
-		if (numberOfPeople != null && !reservationService.isWithinCapacity(numberOfPeople, capacity)) {
-			FieldError fieldError = new FieldError(bindingResult.getObjectName(), "numberOfPeople",
-					"予約人数が定員を超えています。");
-			bindingResult.addError(fieldError);
+		// 営業時間内かどうかをチェック
+		LocalTime reservationTime = reservationInputForm.getReservationTime();
+		if (!reservationService.isWithinBusinessHours(reservationTime, restaurant.getOpeningTime(),
+				restaurant.getClosingTime())) {
+			bindingResult.addError(new FieldError("reservationInputForm", "reservationTime", "予約時間は営業時間内に設定してください。"));
 		}
 
+		// 予約人数が定員を超えないかチェック
+		if (reservationInputForm.getNumberOfPeople() > restaurant.getCapacity()) {
+			bindingResult.addError(new FieldError("reservationInputForm", "numberOfPeople",
+					"予約人数が定員を超えています。"));
+		}
+
+		// エラーがある場合は再度入力ページを表示
 		if (bindingResult.hasErrors()) {
 			model.addAttribute("restaurant", restaurant);
-			model.addAttribute("errorMessage", "予約内容に不備があります。");
-			return "restaurants/show";
+			model.addAttribute("availableTimes",
+					getAvailableTimes(restaurant.getOpeningTime(), restaurant.getClosingTime()));
+			return "restaurants/show"; // エラー表示のために再度フォームを表示
 		}
 
+		// エラーがなければ確認ページにリダイレクト
 		redirectAttributes.addFlashAttribute("reservationInputForm", reservationInputForm);
-
-		return "redirect:/restaurants/{id}/reservations/confirm";
+		return "redirect:/restaurants/" + id + "/reservations/confirm";
 	}
 
 	@GetMapping("/restaurants/{id}/reservations/confirm")
-	public String confirm(@PathVariable(name = "id") Integer id,
+	public String confirmReservation(@PathVariable(name = "id") Integer id,
 			@ModelAttribute ReservationInputForm reservationInputForm,
 			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
 			Model model) {
 		Restaurant restaurant = restaurantRepository.getReferenceById(id);
 		User user = userDetailsImpl.getUser();
 
-		LocalDate reservationDate = reservationInputForm.getReservationDate();
-		if (reservationDate == null) {
-			model.addAttribute("errorMessage", "予約日が選択されていません。");
+		if (reservationInputForm.getReservationDate() == null || reservationInputForm.getReservationTime() == null) {
+			model.addAttribute("errorMessage", "予約日または予約時間が未選択です。");
 			return "redirect:/restaurants/" + id + "/reservations/input";
 		}
 
 		ReservationRegisterForm reservationRegisterForm = new ReservationRegisterForm(
-				restaurant.getId(), user.getId(), reservationDate.toString(), reservationInputForm.getNumberOfPeople());
+				restaurant.getId(),
+				user.getId(),
+				reservationInputForm.getReservationDate().toString(),
+				reservationInputForm.getReservationTime().toString(),
+				reservationInputForm.getNumberOfPeople());
 
 		model.addAttribute("restaurant", restaurant);
 		model.addAttribute("reservationRegisterForm", reservationRegisterForm);
 
-		return "reservations/confirm";
+		return "reservations/confirm"; // 確認ページを表示
 	}
 
 	@PostMapping("/restaurants/{id}/reservations/create")
-	public String create(@ModelAttribute ReservationRegisterForm reservationRegisterForm,
-			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
-			HttpServletRequest request) {
+	public String createReservation(@ModelAttribute ReservationRegisterForm reservationRegisterForm,
+			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
 		User user = userDetailsImpl.getUser();
 
 		// 有料会員のみが予約可能
 		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
 			reservationService.create(reservationRegisterForm);
-			return "redirect:/reservations?reserved"; // 予約確定後、予約一覧ページにリダイレクト
+			return "redirect:/reservations?reserved"; // 予約確定後にリダイレクト
 		}
 
 		// 無料会員は決済ページにリダイレクト
-		String sessionUrl = userService.createSubscriptionSession(request, user.getEmail());
+		String sessionUrl = userService.createSubscriptionSession(null, user.getEmail());
 		return "redirect:" + sessionUrl;
-	}
-
-	@GetMapping("/reservations")
-	public String getReservations(Model model, @AuthenticationPrincipal UserDetailsImpl userDetails,
-			Pageable pageable) {
-		User user = userDetails.getUser();
-		Page<Reservation> reservationPage = reservationService.getReservationsForUser(user, pageable);
-
-		model.addAttribute("reservationPage", reservationPage);
-
-		return "reservations/index"; // このビューが存在することを確認してください
 	}
 }

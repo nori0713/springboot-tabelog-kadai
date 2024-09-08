@@ -1,36 +1,45 @@
 -- 外部キー制約を一時的に無効化
---SET FOREIGN_KEY_CHECKS = 0;
+SET FOREIGN_KEY_CHECKS = 0;
 
 -- 既存のデータを削除
 --DELETE FROM favorites;
 --DELETE FROM reviews;
 --DELETE FROM reservations;
---DELETE FROM users;
---DELETE FROM roles;
---DELETE FROM restaurants;
+DELETE FROM users;
+DELETE FROM roles;
+DELETE FROM restaurants;
 
 -- 外部キー制約を再び有効化
---SET FOREIGN_KEY_CHECKS = 1;
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- カラム追加 --
 -- ALTER TABLE users
 -- ADD COLUMN subscription_status VARCHAR(50) NOT NULL DEFAULT 'INACTIVE';
 
--- 飲食店データ --
-INSERT IGNORE INTO restaurants (id, name, image_name, description, price, postal_code, address, phone_number, category, capacity, created_at, updated_at)
+-- 営業時間カラムの追加
+-- ALTER TABLE restaurants
+-- ADD COLUMN opening_time TIME NOT NULL,
+-- ADD COLUMN closing_time TIME NOT NULL;
+
+-- 予約（reservations）テーブルにreservation_time列を追加
+-- ALTER TABLE reservations
+-- ADD COLUMN reservation_time TIME NOT NULL AFTER reservation_date;
+
+-- 飲食店データ (営業時間付き) --
+INSERT IGNORE INTO restaurants (id, name, image_name, description, price, postal_code, address, phone_number, category, capacity, opening_time, closing_time, created_at, updated_at)
 VALUES 
-(1, '寿司屋', '001.jpg', '町で一番の寿司', 3000, '123-4567', '名古屋市寿司町123', '052-123-4567', '和食', 50, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(2, 'ラーメンハウス', '002.jpg', '美味しいラーメンとサイドメニュー', 1200, '123-4567', '名古屋市ラーメン通り456', '052-123-4568', '和食', 30, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(3, 'ピザワールド', '003.jpg', '本格的なイタリアンピザ', 2500, '123-4567', '名古屋市ピザ大通り789', '052-123-4569', 'イタリアン', 40, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(4, 'バーガータウン', '004.jpg', 'ジューシーなバーガーとフライドポテト', 1500, '123-4567', '名古屋市バーガー通り321', '052-123-4570', 'アメリカン', 35, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(5, 'カレーハウス', '005.jpg', 'スパイシーで風味豊かなカレー', 1800, '123-4567', '名古屋市カレー通り654', '052-123-4571', 'インド料理', 25, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(6, 'BBQヘブン', '006.jpg', 'スモーキーで柔らかいBBQ', 3500, '123-4567', '名古屋市BBQ通り987', '052-123-4572', 'アメリカン', 60, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(7, 'パスタパレス', '007.jpg', '新鮮で美味しいパスタ', 2200, '123-4567', '名古屋市パスタ通り147', '052-123-4573', 'イタリアン', 40, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(8, 'シーフードデライト', '008.jpg', '新鮮なシーフード料理', 4000, '123-4567', '名古屋市シーフード通り258', '052-123-4574', 'シーフード', 50, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(9, 'ベジタリアンビストロ', '009.jpg', 'ヘルシーで美味しいベジタリアン料理', 2000, '123-4567', '名古屋市ベジタリアン通り369', '052-123-4575', 'ベジタリアン', 45, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(10, 'デザートヘイブン', '010.jpg', '甘くて美味しいデザート', 1000, '123-4567', '名古屋市デザート通り741', '052-123-4576', 'デザート', 20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(11, 'テストレストラン', NULL, 'テスト説明', 2000, '123-4567', '名古屋市テスト通り123', '052-123-4567', 'テストカテゴリ', 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(12, 'テストレストラン2', '', 'テスト説明2', 2500, '123-4567', '名古屋市テスト通り456', '052-123-4568', 'テストカテゴリ2', 15, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+(1, '寿司屋', '001.jpg', '町で一番の寿司', 3000, '123-4567', '名古屋市寿司町123', '052-123-4567', '和食', 50, '11:00:00', '22:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(2, 'ラーメンハウス', '002.jpg', '美味しいラーメンとサイドメニュー', 1200, '123-4567', '名古屋市ラーメン通り456', '052-123-4568', '和食', 30, '10:00:00', '21:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(3, 'ピザワールド', '003.jpg', '本格的なイタリアンピザ', 2500, '123-4567', '名古屋市ピザ大通り789', '052-123-4569', 'イタリアン', 40, '12:00:00', '23:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(4, 'バーガータウン', '004.jpg', 'ジューシーなバーガーとフライドポテト', 1500, '123-4567', '名古屋市バーガー通り321', '052-123-4570', 'アメリカン', 35, '09:00:00', '20:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(5, 'カレーハウス', '005.jpg', 'スパイシーで風味豊かなカレー', 1800, '123-4567', '名古屋市カレー通り654', '052-123-4571', 'インド料理', 25, '11:30:00', '22:30:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(6, 'BBQヘブン', '006.jpg', 'スモーキーで柔らかいBBQ', 3500, '123-4567', '名古屋市BBQ通り987', '052-123-4572', 'アメリカン', 60, '12:00:00', '23:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(7, 'パスタパレス', '007.jpg', '新鮮で美味しいパスタ', 2200, '123-4567', '名古屋市パスタ通り147', '052-123-4573', 'イタリアン', 40, '10:00:00', '22:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(8, 'シーフードデライト', '008.jpg', '新鮮なシーフード料理', 4000, '123-4567', '名古屋市シーフード通り258', '052-123-4574', 'シーフード', 50, '11:00:00', '21:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(9, 'ベジタリアンビストロ', '009.jpg', 'ヘルシーで美味しいベジタリアン料理', 2000, '123-4567', '名古屋市ベジタリアン通り369', '052-123-4575', 'ベジタリアン', 45, '10:30:00', '20:30:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(10, 'デザートヘイブン', '010.jpg', '甘くて美味しいデザート', 1000, '123-4567', '名古屋市デザート通り741', '052-123-4576', 'デザート', 20, '09:00:00', '19:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(11, 'テストレストラン', NULL, 'テスト説明', 2000, '123-4567', '名古屋市テスト通り123', '052-123-4567', '和食', 10, '08:00:00', '18:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(12, 'テストレストラン2', '', 'テスト説明2', 2500, '123-4567', '名古屋市テスト通り456', '052-123-4568', '和食', 15, '07:00:00', '17:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- rolesテーブル
 INSERT IGNORE INTO roles (id, name) VALUES 
@@ -55,23 +64,23 @@ INSERT IGNORE INTO users (id, name, furigana, postal_code, address, phone_number
 (13, '加藤 仁', 'カトウ ヒトシ', '678-9012', '名古屋市名東区藤ヶ丘9-9-9', '090-7890-1234', 'hitoshi.kato@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE');
 
 -- 予約データ --
-INSERT IGNORE INTO reservations (id, restaurant_id, user_id, reservation_date, number_of_people, created_at, updated_at)
+INSERT IGNORE INTO reservations (id, restaurant_id, user_id, reservation_date, reservation_time, number_of_people, created_at, updated_at)
 VALUES 
-(1, 1, 1, '2024-08-25', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(2, 2, 2, '2024-08-26', 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(3, 3, 3, '2024-08-27', 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(4, 4, 4, '2024-08-28', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(5, 5, 5, '2024-08-29', 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(6, 6, 6, '2024-08-30', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(7, 7, 7, '2024-08-31', 6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(8, 8, 8, '2024-09-01', 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(9, 9, 9, '2024-09-02', 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(10, 10, 10, '2024-09-03', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(11, 1, 4, '2024-09-04', 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(12, 2, 3, '2024-09-05', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(13, 3, 2, '2024-09-06', 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(14, 4, 1, '2024-09-07', 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(15, 5, 5, '2024-09-08', 6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+(1, 1, 1, '2024-08-25', '12:00:00', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(2, 2, 2, '2024-08-26', '18:00:00', 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(3, 3, 3, '2024-08-27', '13:00:00', 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(4, 4, 4, '2024-08-28', '19:00:00', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(5, 5, 5, '2024-08-29', '20:00:00', 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(6, 6, 6, '2024-08-30', '12:30:00', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(7, 7, 7, '2024-08-31', '18:30:00', 6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(8, 8, 8, '2024-09-01', '11:30:00', 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(9, 9, 9, '2024-09-02', '14:00:00', 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(10, 10, 10, '2024-09-03', '17:30:00', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(11, 1, 4, '2024-09-04', '13:30:00', 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(12, 2, 3, '2024-09-05', '12:00:00', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(13, 3, 2, '2024-09-06', '19:00:00', 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(14, 4, 1, '2024-09-07', '18:30:00', 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(15, 5, 5, '2024-09-08', '20:30:00', 6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- レビューデータ --
 INSERT IGNORE INTO reviews (id, restaurant_id, user_id, score, content) VALUES 

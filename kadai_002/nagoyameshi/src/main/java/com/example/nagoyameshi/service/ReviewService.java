@@ -1,5 +1,7 @@
 package com.example.nagoyameshi.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,5 +44,15 @@ public class ReviewService {
 
 	public boolean hasUserAlreadyReviewed(Restaurant restaurant, User user) {
 		return reviewRepository.findByRestaurantAndUser(restaurant, user) != null;
+	}
+
+	// すべてのレビューを取得
+	public Page<Review> getAllReviews(Pageable pageable) {
+		return reviewRepository.findAll(pageable);
+	}
+
+	// 検索キーワードによるレビューの取得（レストラン名・ユーザー名）
+	public Page<Review> searchReviews(String keyword, Pageable pageable) {
+		return reviewRepository.findByRestaurantNameContainingOrUserNameContaining(keyword, keyword, pageable);
 	}
 }

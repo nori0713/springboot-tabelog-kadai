@@ -1,0 +1,72 @@
+package com.example.nagoyameshi.service;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.nagoyameshi.entity.Reservation;
+import com.example.nagoyameshi.entity.Restaurant;
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.form.ReservationRegisterForm;
+import com.example.nagoyameshi.repository.ReservationRepository;
+import com.example.nagoyameshi.repository.RestaurantRepository;
+import com.example.nagoyameshi.repository.UserRepository;
+
+@Service
+public class ReservationService {
+	private final ReservationRepository reservationRepository;
+	private final RestaurantRepository restaurantRepository;
+	private final UserRepository userRepository;
+
+	public ReservationService(ReservationRepository reservationRepository, RestaurantRepository restaurantRepository,
+			UserRepository userRepository) {
+		this.reservationRepository = reservationRepository;
+		this.restaurantRepository = restaurantRepository;
+		this.userRepository = userRepository;
+	}
+
+	@Transactional
+	public void create(ReservationRegisterForm reservationRegisterForm) {
+		Reservation reservation = new Reservation();
+		Restaurant restaurant = restaurantRepository.getReferenceById(reservationRegisterForm.getRestaurantId());
+		User user = userRepository.getReferenceById(reservationRegisterForm.getUserId());
+
+		// 予約日と予約時間のパース処理
+		LocalDate reservationDate = LocalDate.parse(reservationRegisterForm.getReservationDate());
+		LocalTime reservationTime = LocalTime.parse(reservationRegisterForm.getReservationTime());
+
+		// 各フィールドの設定
+		reservation.setRestaurant(restaurant);
+		reservation.setUser(user);
+		reservation.setReservationDate(reservationDate);
+		reservation.setReservationTime(reservationTime); // 予約時間の設定
+		reservation.setNumberOfPeople(reservationRegisterForm.getNumberOfPeople());
+
+		// 予約データを保存
+		reservationRepository.save(reservation);
+	}
+
+	// 予約人数が定員内かどうか確認するメソッド
+	public boolean isWithinCapacity(Integer numberOfPeople, Integer capacity) {
+		return numberOfPeople <= capacity;
+	}
+
+	// 予約一覧を取得
+	public Page<Reservation> getAllReservations(Pageable pageable) {
+		return reservationRepository.findAll(pageable);
+	}
+
+	// キーワードによる予約検索（レストラン名またはユーザー名）
+	public Page<Reservation> searchReservations(String keyword, Pageable pageable) {
+		return reservationRepository.findByRestaurantNameContainingOrUserNameContaining(keyword, keyword, pageable);
+	}
+
+	// ユーザーごとの予約リストを取得
+	public Page<Reservation> getReservationsForUser(User user, Pageable pageable) {
+		return reservationRepository.findByUserOrderByReservationDateDesc(user, pageable);
+	}
+}

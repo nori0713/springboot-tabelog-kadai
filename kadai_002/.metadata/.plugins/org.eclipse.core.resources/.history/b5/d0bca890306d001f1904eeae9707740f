@@ -1,0 +1,46 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // 予約日選択に関する設定
+    let maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 3);  // 3ヶ月先の日付を設定
+
+    let minDate = new Date();
+    minDate.setDate(minDate.getDate() + 1); // 今日から1日加算して明日を最小日に設定
+
+    // 予約日選択用のFlatpickr初期化
+    const reservationDateInput = document.querySelector('#reservationDate');
+    if (reservationDateInput) {
+        flatpickr(reservationDateInput, {
+            locale: 'ja',           // 日本語ロケール
+            minDate: minDate,       // 明日を最小日付に設定
+            maxDate: maxDate,       // 3ヶ月先を最大日付に設定
+            dateFormat: "Y-m-d",    // 日付フォーマットを指定
+            defaultDate: minDate    // デフォルトを明日に設定
+        });
+    }
+
+    // 開店時間のFlatpickr初期化
+    const openingTimeInput = document.querySelector('#openingTime');
+    if (openingTimeInput) {
+        flatpickr(openingTimeInput, {
+            enableTime: true,       // 時間選択を有効化
+            noCalendar: true,       // カレンダーを非表示
+            dateFormat: "H:i",      // 時間フォーマット
+            time_24hr: true,        // 24時間表記
+            defaultHour: 9,         // デフォルトの開店時間を設定 (例: 9時)
+            minuteIncrement: 60     // 1時間単位で選択可能にする
+        });
+    }
+
+    // 閉店時間のFlatpickr初期化
+    const closingTimeInput = document.querySelector('#closingTime');
+    if (closingTimeInput) {
+        flatpickr(closingTimeInput, {
+            enableTime: true,       // 時間選択を有効化
+            noCalendar: true,       // カレンダーを非表示
+            dateFormat: "H:i",      // 時間フォーマット
+            time_24hr: true,        // 24時間表記
+            defaultHour: 22,        // デフォルトの閉店時間を設定 (例: 22時)
+            minuteIncrement: 60     // 1時間単位で選択可能にする
+        });
+    }
+});

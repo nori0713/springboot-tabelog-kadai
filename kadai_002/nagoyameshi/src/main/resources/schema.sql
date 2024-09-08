@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS reservations (
     restaurant_id INT NOT NULL,
     user_id INT NOT NULL,
     reservation_date DATE NOT NULL,
+    reservation_time TIME NOT NULL,  -- 予約時間を追加
     number_of_people INT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -1,5 +1,10 @@
 package com.example.nagoyameshi.controller;
 
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
@@ -37,6 +42,7 @@ public class AdminRestaurantController {
 	public String index(Model model,
 			@PageableDefault(page = 0, size = 7, sort = "id", direction = Direction.ASC) Pageable pageable,
 			@RequestParam(name = "keyword", required = false) String keyword) {
+
 		if (keyword == null || keyword.equals("null")) {
 			keyword = "";
 		}
@@ -49,6 +55,24 @@ public class AdminRestaurantController {
 			restaurantPage = restaurantRepository.findAll(pageable);
 		}
 
+		// フォーマット用のDateTimeFormatterを作成
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+		// 各レストランの開店・閉店時間をフォーマット
+		List<Map<String, Object>> restaurantList = restaurantPage.map(restaurant -> {
+			Map<String, Object> restaurantMap = new HashMap<>();
+			restaurantMap.put("restaurant", restaurant); // ここでRestaurantオブジェクトをMapに追加
+			restaurantMap.put("formattedOpeningTime", restaurant.getOpeningTime() != null
+					? restaurant.getOpeningTime().format(timeFormatter)
+					: "-");
+			restaurantMap.put("formattedClosingTime", restaurant.getClosingTime() != null
+					? restaurant.getClosingTime().format(timeFormatter)
+					: "-");
+			return restaurantMap;
+		}).getContent();
+
+		// レストランリストをモデルに追加
+		model.addAttribute("restaurantList", restaurantList);
 		model.addAttribute("restaurantPage", restaurantPage);
 		model.addAttribute("keyword", keyword);
 
@@ -59,7 +83,14 @@ public class AdminRestaurantController {
 	public String show(@PathVariable(name = "id") Integer id, Model model) {
 		Restaurant restaurant = restaurantRepository.getReferenceById(id);
 
+		// 時間をフォーマット
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+		String formattedOpeningTime = restaurant.getOpeningTime().format(timeFormatter);
+		String formattedClosingTime = restaurant.getClosingTime().format(timeFormatter);
+
 		model.addAttribute("restaurant", restaurant);
+		model.addAttribute("formattedOpeningTime", formattedOpeningTime);
+		model.addAttribute("formattedClosingTime", formattedClosingTime);
 
 		return "admin/restaurant/show";
 	}
@@ -87,14 +118,33 @@ public class AdminRestaurantController {
 	public String edit(@PathVariable(name = "id") Integer id, Model model) {
 		Restaurant restaurant = restaurantRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Invalid restaurant Id:" + id));
+
 		String imageName = restaurant.getImageName();
-		RestaurantEditForm restaurantEditForm = new RestaurantEditForm(restaurant.getId(), restaurant.getName(), null,
-				restaurant.getDescription(), restaurant.getPrice(), restaurant.getCategory(),
-				restaurant.getPostalCode(), restaurant.getAddress(), restaurant.getPhoneNumber(),
-				restaurant.getCapacity());
+
+		// 時間をフォーマット
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+		String formattedOpeningTime = restaurant.getOpeningTime().format(timeFormatter);
+		String formattedClosingTime = restaurant.getClosingTime().format(timeFormatter);
+
+		RestaurantEditForm restaurantEditForm = new RestaurantEditForm(
+				restaurant.getId(),
+				restaurant.getName(),
+				null, // 画像はnullを使用（更新しない場合）
+				restaurant.getDescription(),
+				restaurant.getPrice(),
+				restaurant.getCategory(),
+				restaurant.getPostalCode(),
+				restaurant.getAddress(),
+				restaurant.getPhoneNumber(),
+				restaurant.getCapacity(),
+				restaurant.getOpeningTime(), // 開店時間
+				restaurant.getClosingTime() // 閉店時間
+		);
 
 		model.addAttribute("imageName", imageName);
 		model.addAttribute("restaurantEditForm", restaurantEditForm);
+		model.addAttribute("formattedOpeningTime", formattedOpeningTime);
+		model.addAttribute("formattedClosingTime", formattedClosingTime);
 
 		return "admin/restaurant/edit";
 	}

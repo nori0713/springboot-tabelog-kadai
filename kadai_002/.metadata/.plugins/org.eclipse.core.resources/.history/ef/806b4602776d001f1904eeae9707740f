@@ -1,0 +1,19 @@
+package com.example.nagoyameshi.repository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.nagoyameshi.entity.Reservation;
+import com.example.nagoyameshi.entity.User;
+
+public interface ReservationRepository extends JpaRepository<Reservation, Integer> {
+
+	// ユーザーごとに予約を取得し、予約日付で降順に並べる
+	Page<Reservation> findByUserOrderByReservationDateDesc(User user, Pageable pageable);
+
+	// 検索条件に基づいて予約を取得（レストラン名またはユーザー名で検索）
+	Page<Reservation> findByRestaurantNameContainingOrUserNameContaining(String restaurantName, String userName,
+			Pageable pageable);
+
+}

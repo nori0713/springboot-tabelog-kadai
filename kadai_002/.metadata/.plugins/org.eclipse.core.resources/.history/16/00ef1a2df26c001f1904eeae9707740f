@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <div th:replace="~{fragment :: meta}"></div>  
+    <div th:replace="~{fragment :: styles}"></div> 
+    <title>飲食店詳細</title>
+</head>
+<body>
+    <div class="nagoyameshi-wrapper">
+        <!-- ヘッダー -->
+        <header th:replace="~{fragment :: header}"></header>
+        
+        <main>
+            <div class="container pt-4 pb-5 nagoyameshi-container">
+                <div class="row justify-content-center">
+                    <div class="col-xxl-9 col-xl-10 col-lg-11">
+                        
+                        <!-- パンくずリスト -->
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a th:href="@{/admin/restaurant}">飲食店一覧</a></li>
+                                <li class="breadcrumb-item active" aria-current="page" th:text="${restaurant.name}">飲食店詳細</li>
+                            </ol>
+                        </nav>
+                        
+                        <h1 class="mb-4 text-center" th:text="${restaurant.name}">飲食店詳細</h1>
+                        
+                        <!-- 編集ボタン -->
+                        <div class="d-flex justify-content-end mb-2">
+                            <a th:href="@{/admin/restaurant/__${restaurant.getId()}__/edit}" class="btn text-white shadow-sm nagoyameshi-btn">編集</a>
+                        </div>
+
+                        <div class="card mb-4">
+                            <div class="card-header bg-brown">
+                                <h5 class="text-white">基本情報</h5>
+                            </div>
+                            <div class="card-body bg-light-brown">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6 d-flex justify-content-center">
+                                        <img th:if="${restaurant.imageName != null and !#strings.isEmpty(restaurant.imageName)}" 
+                                             th:src="@{/storage/images/__${restaurant.imageName}__}" 
+                                             class="w-100" alt="飲食店の画像">
+                                        <img th:unless="${restaurant.imageName != null and !#strings.isEmpty(restaurant.imageName)}" 
+                                             th:src="@{/storage/images/noimage.png}" 
+                                             class="w-100" alt="画像がありません">
+                                    </div>
+                                    <div class="col-md-6 d-flex flex-column justify-content-center">
+                                        <p th:if="${restaurant.address}"><strong>住所:</strong> <span th:text="${restaurant.address}"></span></p>
+                                        <p th:if="${restaurant.postalCode}"><strong>郵便番号:</strong> <span th:text="${restaurant.postalCode}"></span></p>
+                                     	<p th:if="${restaurant.phoneNumber}"><strong>電話番号:</strong> <span th:text="${restaurant.phoneNumber}"></span></p>
+                                        <p th:if="${restaurant.category}"><strong>カテゴリ:</strong> <span th:text="${restaurant.category}"></span></p>
+                                        <p><strong>料金:</strong> <span th:text="${restaurant.price}"></span>円</p>
+                                        <p><strong>説明:</strong> <span th:text="${restaurant.description}"></span></p>
+										<p><strong>予約最大人数:</strong> <span th:text="${restaurant.capacity}"></span>人</p>
+                                        
+                                        <!-- 営業時間の修正 -->
+                                        <p th:if="${formattedOpeningTime != null and formattedClosingTime != null}">
+                                            <strong>営業時間:</strong>
+                                            <span th:text="'開店: ' + formattedOpeningTime + ' ～ ' + formattedClosingTime"></span>
+                                        </p>
+                                        <p th:if="${formattedOpeningTime == null or formattedClosingTime == null}">
+                                            <strong>営業時間:</strong> <span>未定</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-start">
+                            <a th:href="@{/admin/restaurant}" class="btn text-white shadow-sm nagoyameshi-btn">戻る</a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- フッター -->
+        <footer th:replace="~{fragment :: footer}"></footer>
+    </div>
+    
+    <!-- Bootstrap -->
+    <div th:replace="~{fragment :: scripts}"></div>
+    
+</body>
+</html>

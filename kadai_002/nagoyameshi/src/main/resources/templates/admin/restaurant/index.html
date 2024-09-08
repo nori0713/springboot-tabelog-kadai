@@ -43,33 +43,37 @@
                                         <th scope="col">住所</th>
                                         <th scope="col">電話番号</th>
                                         <th scope="col">カテゴリ</th>
-										<th scope="col">予約最大人数</th>
+                                        <th scope="col">予約最大人数</th>
+                                        <th scope="col">開店時間</th>
+                                        <th scope="col">閉店時間</th>
                                         <th scope="col">操作</th>
                                     </tr>
                                 </thead>
 								<tbody>
-								    <tr th:each="restaurant : ${restaurantPage.content}">
-								        <td th:text="${restaurant.id}"></td>
-								        <td th:text="${restaurant.name}"></td>
-								        <td th:text="${restaurant.postalCode}"></td>
-								        <td th:text="${restaurant.address}"></td>
-								        <td th:text="${restaurant.phoneNumber}"></td>
-								        <td th:text="${restaurant.category}"></td>
-										<td th:text="${restaurant.capacity}"></td>
+								    <tr th:each="restaurantMap : ${restaurantList}">
+								        <td th:text="${restaurantMap['restaurant'].id}"></td>
+								        <td th:text="${restaurantMap['restaurant'].name}"></td>
+								        <td th:text="${restaurantMap['restaurant'].postalCode}"></td>
+								        <td th:text="${restaurantMap['restaurant'].address}"></td>
+								        <td th:text="${restaurantMap['restaurant'].phoneNumber}"></td>
+								        <td th:text="${restaurantMap['restaurant'].category}"></td>
+								        <td th:text="${restaurantMap['restaurant'].capacity}"></td>
+								        <td th:text="${restaurantMap['formattedOpeningTime']}"></td>
+								        <td th:text="${restaurantMap['formattedClosingTime']}"></td>
 								        <td>
-								            <a th:href="@{|/admin/restaurant/${restaurant.id}|}">詳細</a> |
-								            <a href="#" class="nagoyameshi-link-danger" data-bs-toggle="modal" th:data-bs-target="${'#deleteRestaurantModal' + restaurant.getId()}">削除</a>
+								            <a th:href="@{|/admin/restaurant/${restaurantMap['restaurant'].id}|}">詳細</a> |
+								            <a href="#" class="nagoyameshi-link-danger" data-bs-toggle="modal" th:data-bs-target="${'#deleteRestaurantModal' + restaurantMap['restaurant'].id}">削除</a>
 								
 								            <!-- 削除用モーダル -->
-								            <div class="modal fade" th:id="${'deleteRestaurantModal' + restaurant.getId()}" tabindex="-1" th:aria-labelledby="${'deleteRestaurantModalLabel' + restaurant.getId()}">
+								            <div class="modal fade" th:id="${'deleteRestaurantModal' + restaurantMap['restaurant'].id}" tabindex="-1" th:aria-labelledby="${'deleteRestaurantModalLabel' + restaurantMap['restaurant'].id}">
 								                <div class="modal-dialog">
 								                    <div class="modal-content">
 								                        <div class="modal-header">
-								                            <h5 class="modal-title" th:id="${'deleteRestaurantModalLabel' + restaurant.getId()}" th:text="${restaurant.name + 'を削除してもよろしいですか？'}"></h5>
+								                            <h5 class="modal-title" th:id="${'deleteRestaurantModalLabel' + restaurantMap['restaurant'].id}" th:text="${restaurantMap['restaurant'].name + 'を削除してもよろしいですか？'}"></h5>
 								                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
 								                        </div>
 								                        <div class="modal-footer">
-								                            <form method="post" th:action="@{/admin/restaurant/{id}/delete(id=${restaurant.id})}">
+								                            <form method="post" th:action="@{/admin/restaurant/{id}/delete(id=${restaurantMap['restaurant'].id})}">
 								                                <button type="submit" class="btn samuraitravel-btn-danger text-white shadow-sm">削除</button>
 								                            </form>
 								                        </div>

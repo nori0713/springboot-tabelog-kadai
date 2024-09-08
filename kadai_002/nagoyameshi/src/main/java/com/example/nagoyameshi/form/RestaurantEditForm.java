@@ -1,5 +1,7 @@
 package com.example.nagoyameshi.form;
 
+import java.time.LocalTime;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.constraints.Min;
@@ -43,4 +45,12 @@ public class RestaurantEditForm {
 	@NotNull(message = "予約最大人数を入力してください。")
 	@Min(value = 1, message = "予約最大人数は1人以上に設定してください。")
 	private Integer capacity;
+
+	// 追加部分: 営業時間
+	@NotNull(message = "開店時間を入力してください。")
+	private LocalTime openingTime;
+
+	@NotNull(message = "閉店時間を入力してください。")
+	private LocalTime closingTime;
+
 }

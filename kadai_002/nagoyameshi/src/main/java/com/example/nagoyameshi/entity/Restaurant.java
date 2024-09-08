@@ -1,6 +1,7 @@
 package com.example.nagoyameshi.entity;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime; // 追加
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -47,6 +48,13 @@ public class Restaurant {
 
 	@Column(name = "capacity", nullable = false)
 	private Integer capacity;
+
+	// 追加部分
+	@Column(name = "opening_time", nullable = false)
+	private LocalTime openingTime;
+
+	@Column(name = "closing_time", nullable = false)
+	private LocalTime closingTime;
 
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;

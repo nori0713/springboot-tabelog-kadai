@@ -52,6 +52,17 @@
                                         <p><strong>料金:</strong> <span th:text="${restaurant.price}"></span>円</p>
                                         <p><strong>説明:</strong> <span th:text="${restaurant.description}"></span></p>
 										<p><strong>予約最大人数:</strong> <span th:text="${restaurant.capacity}"></span>人</p>
+                                        
+										<!-- 営業時間の修正 -->
+										<p>
+										    <strong>営業時間:</strong>
+										    <span th:if="${formattedOpeningTime != null and formattedClosingTime != null}">
+										        <span th:text="${'開店: ' + formattedOpeningTime + ' ～ 閉店: ' + formattedClosingTime}"></span>
+										    </span>
+										    <span th:if="${formattedOpeningTime == null or formattedClosingTime == null}">
+										        未定
+										    </span>
+										</p>
                                     </div>
                                 </div>
                             </div>

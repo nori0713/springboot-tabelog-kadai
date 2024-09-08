@@ -1,0 +1,33 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // 現在の日付を取得し、3ヶ月先の日付を計算
+    let maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 3);
+
+    // 予約日選択用のFlatpickr初期化
+    if (document.querySelector('#reservationDate')) {
+        flatpickr('#reservationDate', {
+            locale: 'ja', // 日本語ロケールを使用
+            minDate: 'today', // 予約可能な最小日付を今日に設定
+            maxDate: maxDate // 予約可能な最大日付を3ヶ月先に設定
+        });
+    }
+
+    // 開店時間と閉店時間のFlatpickr初期化
+    if (document.querySelector('#openingTime')) {
+        flatpickr('#openingTime', {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i", // 時間だけを選択
+            time_24hr: true // 24時間形式を使用
+        });
+    }
+
+    if (document.querySelector('#closingTime')) {
+        flatpickr('#closingTime', {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i", // 時間だけを選択
+            time_24hr: true // 24時間形式を使用
+        });
+    }
+});

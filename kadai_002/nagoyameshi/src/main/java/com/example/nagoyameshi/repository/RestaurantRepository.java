@@ -43,7 +43,7 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Integer>
 	Page<Restaurant> findAllByOrderByPriceAsc(Pageable pageable);
 
 	// 新しいレストランを上位10件取得するメソッド
-	public List<Restaurant> findTop10ByOrderByCreatedAtDesc();
+	List<Restaurant> findTop10ByOrderByCreatedAtDesc();
 
 	// 予約最大人数に基づく検索・ソートメソッド
 	Page<Restaurant> findByCapacityGreaterThanEqualOrderByCreatedAtDesc(Integer capacity, Pageable pageable);
@@ -58,4 +58,23 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Integer>
 	Page<Restaurant> findByCapacityLessThanEqualOrderByPriceAsc(Integer capacity, Pageable pageable);
 
 	Page<Restaurant> findByCapacityBetweenOrderByPriceAsc(Integer minCapacity, Integer maxCapacity, Pageable pageable);
+
+	// カテゴリ検索メソッドの追加
+	Page<Restaurant> findByCategoryOrderByCreatedAtDesc(String category, Pageable pageable);
+
+	Page<Restaurant> findByCategoryOrderByPriceAsc(String category, Pageable pageable);
+
+	// カテゴリと価格の範囲で検索
+	Page<Restaurant> findByCategoryAndPriceBetweenOrderByCreatedAtDesc(String category, Integer minPrice,
+			Integer maxPrice, Pageable pageable);
+
+	Page<Restaurant> findByCategoryAndPriceBetweenOrderByPriceAsc(String category, Integer minPrice, Integer maxPrice,
+			Pageable pageable);
+
+	// カテゴリと最大人数で検索
+	Page<Restaurant> findByCategoryAndCapacityBetweenOrderByCreatedAtDesc(String category, Integer minCapacity,
+			Integer maxCapacity, Pageable pageable);
+
+	Page<Restaurant> findByCategoryAndCapacityBetweenOrderByPriceAsc(String category, Integer minCapacity,
+			Integer maxCapacity, Pageable pageable);
 }
