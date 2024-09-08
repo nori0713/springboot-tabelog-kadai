@@ -1,0 +1,54 @@
+document.addEventListener('DOMContentLoaded', function() {
+    let maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 3); // 最大3ヶ月先まで選択可能
+
+    let minDate = new Date();
+    minDate.setDate(minDate.getDate() + 1); // 今日の翌日から選択可能
+
+    // 予約日用のflatpickr設定
+    const reservationDateInput = document.querySelector('#reservationDate');
+    if (reservationDateInput) {
+        flatpickr(reservationDateInput, {
+            locale: 'ja',
+            minDate: minDate,
+            maxDate: maxDate,
+            dateFormat: "Y-m-d",
+            defaultDate: minDate
+        });
+    }
+
+    // サーバーから受け取った営業時間を利用して予約時間を生成
+    const openingTime = /*[[${formattedOpeningTime}]]*/ '09:00'; // デフォルト値を持たせる
+    const closingTime = /*[[${formattedClosingTime}]]*/ '22:00';
+
+    const reservationTimeInput = document.querySelector('#reservationTime');
+    if (reservationTimeInput) {
+        updateReservationTime(openingTime, closingTime); // ページ読み込み時に初期化
+    }
+
+    function updateReservationTime(openingTime, closingTime) {
+        let timeOptions = [];
+        let currentTime = openingTime;
+
+        // 予約時間を1時間刻みで生成し、プルダウン用の選択肢を作成
+        while (currentTime < closingTime) {
+            timeOptions.push(currentTime);
+            currentTime = incrementTime(currentTime, 1); // 1時間加算
+        }
+
+        // プルダウンに選択肢を設定
+        reservationTimeInput.innerHTML = ''; // 一旦クリア
+        timeOptions.forEach(function(time) {
+            let option = document.createElement('option');
+            option.value = time;
+            option.textContent = time;
+            reservationTimeInput.appendChild(option);
+        });
+    }
+
+    function incrementTime(time, hours) {
+        let [hour, minute] = time.split(':').map(Number);
+        hour = (hour + hours) % 24;
+        return hour.toString().padStart(2, '0') + ':' + minute.toString().padStart(2, '0');
+    }
+});

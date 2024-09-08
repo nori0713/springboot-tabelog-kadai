@@ -4,18 +4,21 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.nagoyameshi.entity.Reservation;
 import com.example.nagoyameshi.entity.Restaurant;
 import com.example.nagoyameshi.entity.User;
 import com.example.nagoyameshi.form.ReservationInputForm;
@@ -58,7 +61,7 @@ public class ReservationController {
 		model.addAttribute("restaurant", restaurant);
 		model.addAttribute("user", user);
 
-		return "restaurants/show"; // 予約フォームを表示
+		return "reservations/show"; // 予約フォームを表示
 	}
 
 	// 営業時間内の予約可能な時間を生成
@@ -86,33 +89,22 @@ public class ReservationController {
 			RedirectAttributes redirectAttributes,
 			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
 		Restaurant restaurant = restaurantRepository.getReferenceById(id);
-		User user = userDetailsImpl.getUser();
-
-		// 有料会員でない場合は決済ページへリダイレクト
-		if (!"ROLE_PREMIUM".equals(user.getRole().getName())) {
-			String sessionUrl = userService.createSubscriptionSession(null, user.getEmail());
-			return "redirect:" + sessionUrl;
-		}
-
-		// 営業時間内かどうかをチェック
-		LocalTime reservationTime = reservationInputForm.getReservationTime();
-		if (!reservationService.isWithinBusinessHours(reservationTime, restaurant.getOpeningTime(),
-				restaurant.getClosingTime())) {
-			bindingResult.addError(new FieldError("reservationInputForm", "reservationTime",
-					"予約時間は営業時間内に設定してください。"));
-		}
-
-		// 予約人数が定員を超えないかチェック
-		if (reservationInputForm.getNumberOfPeople() > restaurant.getCapacity()) {
-			bindingResult.addError(new FieldError("reservationInputForm", "numberOfPeople",
-					"予約人数が定員を超えています。"));
-		}
 
 		// エラーがある場合は再度入力ページを表示
 		if (bindingResult.hasErrors()) {
+			// 予約可能な時間リストを再度モデルに追加
+			List<LocalTime> availableTimes = getAvailableTimes(restaurant.getOpeningTime(),
+					restaurant.getClosingTime());
+			model.addAttribute("availableTimes", availableTimes);
+
+			// その他の必要なデータもモデルに追加
 			model.addAttribute("restaurant", restaurant);
-			model.addAttribute("availableTimes",
-					getAvailableTimes(restaurant.getOpeningTime(), restaurant.getClosingTime()));
+			model.addAttribute("reservationInputForm", reservationInputForm);
+
+			// 営業時間もモデルに渡す
+			model.addAttribute("formattedOpeningTime", restaurant.getOpeningTime());
+			model.addAttribute("formattedClosingTime", restaurant.getClosingTime());
+
 			return "restaurants/show"; // エラー表示のために再度フォームを表示
 		}
 
@@ -161,5 +153,26 @@ public class ReservationController {
 		// 無料会員は決済ページにリダイレクト
 		String sessionUrl = userService.createSubscriptionSession(null, user.getEmail());
 		return "redirect:" + sessionUrl;
+	}
+
+	// 予約一覧を表示するエンドポイントを追加
+	@GetMapping("/reservations")
+	public String getReservations(Model model,
+			@RequestParam(value = "page", defaultValue = "0") int page,
+			@RequestParam(value = "reserved", required = false) String reserved,
+			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+		User user = userDetailsImpl.getUser();
+
+		// ログインユーザーの予約一覧を取得
+		Page<Reservation> reservationPage = reservationService.getReservationsForUser(user, PageRequest.of(page, 10));
+
+		model.addAttribute("reservationPage", reservationPage);
+
+		// 予約完了のメッセージを表示
+		if (reserved != null) {
+			model.addAttribute("reserved", true);
+		}
+
+		return "reservations/index"; // 予約一覧ページのテンプレート名は`index`
 	}
 }
