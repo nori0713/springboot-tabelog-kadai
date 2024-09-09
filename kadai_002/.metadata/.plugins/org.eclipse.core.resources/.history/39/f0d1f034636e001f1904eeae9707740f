@@ -17,9 +17,9 @@
 -- ADD COLUMN subscription_status VARCHAR(50) NOT NULL DEFAULT 'INACTIVE';
 
 -- 営業時間カラムの追加
---ALTER TABLE restaurants
---ADD COLUMN opening_time TIME NOT NULL,
---ADD COLUMN closing_time TIME NOT NULL;
+-- ALTER TABLE restaurants
+-- ADD COLUMN opening_time TIME NOT NULL,
+-- ADD COLUMN closing_time TIME NOT NULL;
 
 -- 予約（reservations）テーブルにreservation_time列を追加
 -- ALTER TABLE reservations

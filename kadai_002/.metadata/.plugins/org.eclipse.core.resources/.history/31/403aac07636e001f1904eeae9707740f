@@ -10,8 +10,6 @@ CREATE TABLE IF NOT EXISTS restaurants (
    phone_number VARCHAR (50) NOT NULL,
    category VARCHAR (100) NOT NULL,
    capacity INT NOT NULL,
-   opening_time TIME,      -- 開店時間
-   closing_time TIME,      -- 閉店時間
    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
