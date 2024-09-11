@@ -35,7 +35,8 @@ public class RestaurantController {
 	}
 
 	@GetMapping("/restaurants/{id}")
-	public String show(@PathVariable("id") Integer id, @AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+	public String show(@PathVariable("id") Integer id,
+			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
 			Model model, RedirectAttributes redirectAttributes) {
 
 		// レストラン取得
@@ -48,7 +49,7 @@ public class RestaurantController {
 		Restaurant restaurant = optionalRestaurant.get();
 		model.addAttribute("restaurant", restaurant);
 
-		// 日時フォーマット
+		// 営業時間のフォーマット
 		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 		String formattedOpeningTime = restaurant.getOpeningTime() != null
 				? restaurant.getOpeningTime().format(timeFormatter)
@@ -63,10 +64,18 @@ public class RestaurantController {
 		List<Review> reviews = reviewRepository.findAllByRestaurantOrderByCreatedAtDesc(restaurant);
 		model.addAttribute("reviews", reviews);
 
-		// ログインユーザーがいる場合にお気に入りかどうかを確認
-		User user = userDetailsImpl != null ? userDetailsImpl.getUser() : null;
-		boolean isFavorite = user != null && favoriteService.isFavorite(restaurant, user);
+		// ログインユーザーの確認とお気に入り状態の取得
+		User user = (userDetailsImpl != null) ? userDetailsImpl.getUser() : null;
+		boolean isFavorite = (user != null) && favoriteService.isFavorite(restaurant, user);
 		model.addAttribute("isFavorite", isFavorite);
+
+		// 既にレビューを投稿済みか確認
+		if (user != null) {
+			boolean hasReviewed = reviews.stream().anyMatch(review -> review.getUser().getId().equals(user.getId()));
+			model.addAttribute("hasReviewed", hasReviewed);
+		} else {
+			model.addAttribute("hasReviewed", false);
+		}
 
 		// 予約フォームの準備
 		model.addAttribute("reservationInputForm", new ReservationInputForm());

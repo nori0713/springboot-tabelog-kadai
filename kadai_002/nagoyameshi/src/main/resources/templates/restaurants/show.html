@@ -217,59 +217,63 @@
                 </div>
             </div>
 
-            <!-- レビューセクション -->
-            <div class="mt-4 review-section">
-                <h2 class="text-center">レビュー</h2>
-                <div sec:authorize="isAuthenticated()" class="d-flex justify-content-center">
-                    <div class="card-body d-flex justify-content-center">
+			<!-- レビューセクション -->
+			<div class="mt-4 review-section">
+			    <h2 class="text-center">レビュー</h2>
+			    <div sec:authorize="isAuthenticated()" class="d-flex justify-content-center">
+			        <div class="card-body d-flex justify-content-center">
 						<a th:href="@{/reviews/restaurant/{id}/newReview(id=${restaurant.id})}" 
 						   class="btn text-white shadow-sm w-50 nagoyameshi-btn"
 						   th:if="${hasReviewed == null || !hasReviewed}">レビューを投稿する</a>
-                    </div>
-                </div>
-                <br>
-                <div class="text-center">
-                    <div th:if="${reviews == null || reviews.isEmpty()}">
-                        <p>レビューがありません。</p>
-                    </div>
-                </div>
-                <div th:if="${reviews != null && !reviews.isEmpty()}" class="row justify-content-center">
-					<div th:each="review, iterStat : ${reviews}" th:if="${iterStat.index < 6}" class="col-md-6 mb-4 d-flex justify-content-center">
-					    <div class="card review-card"> <!-- カード幅を広くして中央寄せ -->
-					        <div class="card-body position-relative">
-					            <div sec:authorize="isAuthenticated()" class="position-absolute top-0 end-0 mt-2 me-2">
-					                <div th:if="${review.user.id == #authentication.principal.user.id}">
-					                    <a th:href="@{/reviews/edit/{reviewId}(reviewId=${review.id})}" class="btn btn-link">編集</a>
-					                    <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal"
-					                            th:data-bs-target="'#deleteModal-' + ${review.id}">削除</button>
-					                </div>
-					            </div>
-					            <h5 class="card-title" th:text="${review.user.name}">ユーザー名</h5>
-					            <div class="card-subtitle mb-2 text-muted">
-					                <div class="stars-outer">
-					                    <span th:each="star : ${#numbers.sequence(1, 5)}"
-					                          th:classappend="${star <= review.score ? 'nagoyameshi-star filled' : 'nagoyameshi-star'}">&#9733;</span>
-					                </div>
-					            </div>
-					            <span th:text="${#dates.format(review.createdAt, 'yyyy年MM月dd日')}">日付</span>
-					            <p class="card-text" th:text="${review.content}">レビュー内容</p>
-					        </div>
-							<div th:id="'deleteModal-' + ${review.id}" class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-					            <div class="modal-dialog">
-					                <div class="modal-content">
-					                    <div class="modal-header">
-					                        <h5 class="modal-title" id="exampleModalLabel">確認</h5>
-					                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-					                    </div>
-					                    <div class="modal-body">
-					                        <p th:text="${restaurant.name + 'のレビューを削除してもよろしいですか？'}"></p>
-					                    </div>
-					                    <div class="modal-footer">
-					                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-					                        <form th:action="@{/reviews/delete/{reviewId}(reviewId=${review.id})}" method="post">
-					                            <button type="submit" class="btn btn-danger">削除</button>
-					                        </form>
-					                    </div>
+			        </div>
+			    </div>
+			    <br>
+			    <div class="text-center">
+			        <div th:if="${reviews == null || reviews.isEmpty()}">
+			            <p>レビューがありません。</p>
+			        </div>
+			    </div>
+			    <div th:if="${reviews != null && !reviews.isEmpty()}" class="row justify-content-center">
+			        <div th:each="review, iterStat : ${reviews}" class="col-md-6 mb-4 d-flex justify-content-center">
+			            <div class="card review-card">
+			                <div class="card-body position-relative">
+			                    <div sec:authorize="isAuthenticated()" class="position-absolute top-0 end-0 mt-2 me-2">
+									<div th:if="${review.user.id == #authentication.principal.user.id}">
+									    <a th:href="@{/reviews/edit/{reviewId}(reviewId=${review.id})}" class="btn btn-link">編集</a>
+									    <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal"
+									            th:data-bs-target="'#deleteModal-' + ${review.id}">削除</button>
+									</div>
+			                    </div>
+			                    <h5 class="card-title" th:text="${review.user.name}">ユーザー名</h5>
+			                    <div class="card-subtitle mb-2 text-muted">
+			                        <div class="stars-outer">
+			                            <div class="stars-inner" th:style="'width: ' + (${review.score / 5.0} * 100) + '%'"></div>
+			                            <span class="nagoyameshi-star">&#9733;</span>
+			                            <span class="nagoyameshi-star">&#9733;</span>
+			                            <span class="nagoyameshi-star">&#9733;</span>
+			                            <span class="nagoyameshi-star">&#9733;</span>
+			                            <span class="nagoyameshi-star">&#9733;</span>
+			                        </div>
+			                    </div>
+			                    <span th:text="${#dates.format(review.createdAt, 'yyyy年MM月dd日')}">日付</span>
+			                    <p class="card-text" th:text="${review.content}">レビュー内容</p>
+			                </div>
+			                <div th:id="'deleteModal-' + ${review.id}" class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+			                    <div class="modal-dialog">
+			                        <div class="modal-content">
+			                            <div class="modal-header">
+			                                <h5 class="modal-title" id="exampleModalLabel">確認</h5>
+			                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			                            </div>
+			                            <div class="modal-body">
+			                                <p th:text="${restaurant.name + 'のレビューを削除してもよろしいですか？'}"></p>
+			                            </div>
+										<div class="modal-footer">
+											<form th:action="@{/reviews/delete/{reviewId}(reviewId=${review.id})}" method="post">
+												<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+												<button type="submit" class="btn btn-danger">削除</button>
+											</form>
+										</div>
 					                </div>
 					            </div>
 					        </div>

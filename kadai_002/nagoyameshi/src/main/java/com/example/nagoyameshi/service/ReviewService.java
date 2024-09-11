@@ -1,7 +1,5 @@
 package com.example.nagoyameshi.service;
 
-import java.util.Optional;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -10,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.nagoyameshi.entity.Restaurant;
 import com.example.nagoyameshi.entity.Review;
 import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.exception.ResourceNotFoundException;
 import com.example.nagoyameshi.form.ReviewEditForm;
 import com.example.nagoyameshi.form.ReviewRegisterForm;
 import com.example.nagoyameshi.repository.ReviewRepository;
@@ -24,6 +23,11 @@ public class ReviewService {
 
 	@Transactional
 	public void create(Restaurant restaurant, User user, ReviewRegisterForm reviewRegisterForm) {
+		// ユーザーがすでにレビューを投稿しているか確認
+		if (hasUserAlreadyReviewed(restaurant, user)) {
+			throw new IllegalStateException("このユーザーはすでにこのレストランにレビューを投稿しています。");
+		}
+
 		Review review = new Review();
 		review.setRestaurant(restaurant);
 		review.setUser(user);
@@ -34,19 +38,18 @@ public class ReviewService {
 
 	@Transactional
 	public void update(ReviewEditForm reviewEditForm) {
-		Optional<Review> reviewOpt = reviewRepository.findById(reviewEditForm.getId());
-		if (reviewOpt.isEmpty()) {
-			throw new IllegalArgumentException("指定されたレビューが見つかりません。");
-		}
+		// カスタム例外を使用して、レビューが存在しない場合の処理
+		Review review = reviewRepository.findById(reviewEditForm.getId())
+				.orElseThrow(() -> new ResourceNotFoundException("指定されたレビューが見つかりません。"));
 
-		Review review = reviewOpt.get();
 		review.setScore(reviewEditForm.getScore());
 		review.setContent(reviewEditForm.getContent());
 		reviewRepository.save(review);
 	}
 
 	public boolean hasUserAlreadyReviewed(Restaurant restaurant, User user) {
-		return reviewRepository.findByRestaurantAndUser(restaurant, user) != null;
+		// Optionalを使用して存在チェック
+		return reviewRepository.findByRestaurantAndUser(restaurant, user).isPresent();
 	}
 
 	// すべてのレビューを取得

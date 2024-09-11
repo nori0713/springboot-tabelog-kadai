@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -26,7 +27,11 @@ public class WebSecurityConfig {
 						.requestMatchers("/stripe/webhook").permitAll() // Webhookエンドポイントのアクセスを許可
 						.anyRequest().authenticated() // 上記以外のURLはログインが必要
 				)
-				.csrf().ignoringRequestMatchers("/stripe/webhook") // WebhookエンドポイントでCSRF保護を無効化
+				.csrf()
+				.ignoringRequestMatchers("/stripe/webhook") // WebhookエンドポイントでCSRF保護を無効化
+				.and()
+				.sessionManagement()
+				.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // 必要な場合にのみセッションを作成
 				.and()
 				.formLogin((form) -> form
 						.loginPage("/login") // ログインページのURL

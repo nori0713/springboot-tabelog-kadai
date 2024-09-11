@@ -15,7 +15,6 @@ INDEX VERSION 1.134+C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_
 190593849.index
 1888949670.index
 2757847691.index
-1461014136.index
 634116964.index
 4252543968.index
 1806030443.index

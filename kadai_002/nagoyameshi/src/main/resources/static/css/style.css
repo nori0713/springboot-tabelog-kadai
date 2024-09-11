@@ -175,24 +175,19 @@ h3 {
     color: #fff;
 }
 
-.nagoyameshi-star {
-    color: #ffa500;
-}
-
-.nagoyameshi-star:focus {
-    color: #ffa500;
-}
-
 /* レビューカードのデザイン */
 .review-section {
     display: flex;
     flex-direction: column;
-    align-items: center; /* セクション全体を中央に寄せる */
+    align-items: center;
+    width: 100%;
+    margin: 0 auto;
 }
 
+/* レビューカードの幅を調整 */
 .review-card {
-    max-width: 24rem; /* ボックスの最大幅を指定 */
-    width: 100%; /* 割り当てられた幅全体を使用 */
+    max-width: 380px; /* カードの最大幅を設定 */
+    width: 100%;
 }
 
 .review-section .card {
@@ -205,7 +200,11 @@ h3 {
 /* レビューセクションの中央寄せと2列表示 */
 .review-section .row {
     width: 100%;
-    justify-content: center; /* レビューを中央に寄せる */
+    max-width: 800px; /* コンテナの最大幅を設定 */
+    display: flex;
+    justify-content: space-between; /* 要素間にスペースを均等に配置 */
+    gap: 20px; /* カード間のスペースを設定 */
+    flex-wrap: wrap; /* カードが2列で表示されるように */
 }
 
 .review-section .col-md-6 {
@@ -215,9 +214,27 @@ h3 {
 }
 
 /* 星のデザイン */
-.review-section .stars-outer {
+.stars-outer {
+    position: relative;
     display: inline-block;
-    color: #ffa500; /* 星に色をつける */
+}
+
+.stars-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 0%; /* 初期状態の幅を0に設定 */
+}
+
+.nagoyameshi-star {
+    font-size: 1.5rem;
+    color: #ffa500;
+}
+
+.nagoyameshi-star:focus {
+    color: #ffa500;
 }
 
 /* スクリーンサイズによって2列に調整 */
