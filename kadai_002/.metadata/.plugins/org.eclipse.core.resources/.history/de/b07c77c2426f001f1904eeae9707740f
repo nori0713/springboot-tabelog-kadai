@@ -1,0 +1,39 @@
+package com.example.nagoyameshi.service;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.nagoyameshi.entity.Favorite;
+import com.example.nagoyameshi.entity.Restaurant;
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.repository.FavoriteRepository;
+
+@Service
+public class FavoriteService {
+	private final FavoriteRepository favoriteRepository;
+
+	public FavoriteService(FavoriteRepository favoriteRepository) {
+		this.favoriteRepository = favoriteRepository;
+	}
+
+	@Transactional
+	public void create(Restaurant restaurant, User user) {
+		// 重複チェック
+		if (isFavorite(restaurant, user)) {
+			// すでにお気に入りに登録されている場合、処理をスキップ
+			return;
+		}
+
+		// 新しいお気に入りを作成
+		Favorite favorite = new Favorite();
+		favorite.setRestaurant(restaurant);
+		favorite.setUser(user);
+
+		favoriteRepository.save(favorite);
+	}
+
+	// すでにお気に入りに登録されているかどうかを確認するメソッド
+	public boolean isFavorite(Restaurant restaurant, User user) {
+		return favoriteRepository.findByRestaurantAndUser(restaurant, user) != null;
+	}
+}

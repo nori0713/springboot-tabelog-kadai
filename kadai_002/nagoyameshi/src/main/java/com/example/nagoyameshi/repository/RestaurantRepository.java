@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.example.nagoyameshi.entity.Category;
 import com.example.nagoyameshi.entity.Restaurant;
 
 @Repository
@@ -59,22 +60,30 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Integer>
 
 	Page<Restaurant> findByCapacityBetweenOrderByPriceAsc(Integer minCapacity, Integer maxCapacity, Pageable pageable);
 
-	// カテゴリ検索メソッドの追加
-	Page<Restaurant> findByCategoryOrderByCreatedAtDesc(String category, Pageable pageable);
+	// カテゴリ検索メソッドの追加（カテゴリはCategoryエンティティに変更）
+	// カテゴリIDでレストランを検索し、価格の昇順で並び替えるメソッド
+	Page<Restaurant> findByCategory_IdOrderByPriceAsc(Integer categoryId, Pageable pageable);
 
-	Page<Restaurant> findByCategoryOrderByPriceAsc(String category, Pageable pageable);
+	// カテゴリIDでレストランを検索し、作成日時の降順で並び替えるメソッド
+	Page<Restaurant> findByCategory_IdOrderByCreatedAtDesc(Integer categoryId, Pageable pageable);
+
+	// カテゴリでレストランを検索し、価格の昇順で並び替えるメソッド
+	Page<Restaurant> findByCategoryOrderByPriceAsc(Category category, Pageable pageable);
+
+	// カテゴリでレストランを検索し、作成日時の降順で並び替えるメソッド
+	Page<Restaurant> findByCategoryOrderByCreatedAtDesc(Category category, Pageable pageable);
 
 	// カテゴリと価格の範囲で検索
-	Page<Restaurant> findByCategoryAndPriceBetweenOrderByCreatedAtDesc(String category, Integer minPrice,
+	Page<Restaurant> findByCategoryAndPriceBetweenOrderByCreatedAtDesc(Category category, Integer minPrice,
 			Integer maxPrice, Pageable pageable);
 
-	Page<Restaurant> findByCategoryAndPriceBetweenOrderByPriceAsc(String category, Integer minPrice, Integer maxPrice,
+	Page<Restaurant> findByCategoryAndPriceBetweenOrderByPriceAsc(Category category, Integer minPrice, Integer maxPrice,
 			Pageable pageable);
 
 	// カテゴリと最大人数で検索
-	Page<Restaurant> findByCategoryAndCapacityBetweenOrderByCreatedAtDesc(String category, Integer minCapacity,
+	Page<Restaurant> findByCategoryAndCapacityBetweenOrderByCreatedAtDesc(Category category, Integer minCapacity,
 			Integer maxCapacity, Pageable pageable);
 
-	Page<Restaurant> findByCategoryAndCapacityBetweenOrderByPriceAsc(String category, Integer minCapacity,
+	Page<Restaurant> findByCategoryAndCapacityBetweenOrderByPriceAsc(Category category, Integer minCapacity,
 			Integer maxCapacity, Pageable pageable);
 }

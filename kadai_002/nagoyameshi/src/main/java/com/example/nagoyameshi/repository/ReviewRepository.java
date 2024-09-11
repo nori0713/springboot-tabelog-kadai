@@ -11,15 +11,23 @@ import com.example.nagoyameshi.entity.Review;
 import com.example.nagoyameshi.entity.User;
 
 public interface ReviewRepository extends JpaRepository<Review, Integer> {
-	public List<Review> findTop6ByRestaurantOrderByCreatedAtDesc(Restaurant restaurant);
 
-	public Review findByRestaurantAndUser(Restaurant restaurant, User user);
+	// 最新の6件のレビューを取得（リスト）
+	List<Review> findTop6ByRestaurantOrderByCreatedAtDesc(Restaurant restaurant);
 
-	public long countByRestaurant(Restaurant restaurant);
+	// 特定のレストランとユーザーによるレビューを1件取得
+	Review findByRestaurantAndUser(Restaurant restaurant, User user);
 
-	public Page<Review> findByRestaurantOrderByCreatedAtDesc(Restaurant restaurant, Pageable pageable);
+	// レストランのレビュー数をカウント
+	long countByRestaurant(Restaurant restaurant);
 
-	// レストラン名またはユーザー名でレビューを検索
-	Page<Review> findByRestaurantNameContainingOrUserNameContaining(String restaurantName, String userName,
+	// ページング対応でレビューを取得
+	Page<Review> findByRestaurantOrderByCreatedAtDesc(Restaurant restaurant, Pageable pageable);
+
+	// 特定のレストランのすべてのレビューを取得（リスト）
+	List<Review> findAllByRestaurantOrderByCreatedAtDesc(Restaurant restaurant);
+
+	// レストラン名またはユーザー名でレビューを検索（ページング対応）
+	Page<Review> findByRestaurant_NameContainingOrUser_NameContaining(String restaurantName, String userName,
 			Pageable pageable);
 }

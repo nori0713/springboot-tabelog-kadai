@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">    
+<head>
+    <div th:replace="~{fragment :: meta}"></div>   
+    <div th:replace="~{fragment :: styles}"></div>
+		
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+		
+    <title>飲食店詳細</title>   
+</head>
+<body>
+    <div class="nagoyameshi-wrapper">
+        <!-- ヘッダー -->
+        <div th:replace="~{fragment :: header}"></div>
+        
+        <main>
+            <div class="container pt-4 pb-5 nagoyameshi-container">
+                <div class="row justify-content-center">
+                    <div class="col-xxl-9 col-xl-10 col-lg-11">
+                        <div class="d-flex justify-content-between mb-4">
+                            <nav class="mb-4" style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+                                <ol class="breadcrumb mb-0">                        
+                                    <li class="breadcrumb-item"><a th:href="@{/}">ホーム</a></li>
+                                    <li class="breadcrumb-item"><a th:href="@{/restaurants}">飲食店一覧</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">飲食店詳細</li>
+                                </ol>
+                            </nav> 
+                        
+							<!-- お気に入りセクション -->
+							<div sec:authorize="isAuthenticated()">
+							    <a href="#" onclick="event.preventDefault(); document.getElementById('favorite-form').submit();"
+							       th:text="${isFavorite != null and isFavorite ? 'お気に入り解除' : 'お気に入り追加'}">
+							    </a>
+							    <form method="post" th:action="@{/restaurants/__${restaurant.id}__/favorites/toggle}" id="favorite-form" class="d-none"></form>
+							</div>
+                        </div>
+
+                        <h1 class="mb-4 text-center" th:text="${restaurant.name}"></h1>                                                           
+                        
+                        <div th:if="${successMessage}" class="alert alert-info">
+                            <span th:text="${successMessage}"></span>
+                        </div> 
+						
+                        <div th:if="${errorMessage}" class="alert alert-danger">
+                            <span th:text="${errorMessage}"></span>
+                        </div>                                                                         
+                        
+                        <div class="mb-4">
+                            <img th:if="${restaurant.imageName != null and !#strings.isEmpty(restaurant.imageName)}" 
+                                 th:src="@{/storage/images/__${restaurant.imageName}__}" 
+                                 class="w-100" alt="飲食店画像">
+                            <img th:unless="${restaurant.imageName != null and !#strings.isEmpty(restaurant.imageName)}" 
+                                 th:src="@{/storage/images/noimage.png}" 
+                                 class="w-100" alt="NO IMAGE">
+                        </div>
+                        
+                        <div class="container">  
+                            <div class="row">
+                                <div class="col-lg-8 container mb-4"> 
+                                    <!-- 飲食店の詳細情報を表示 -->
+                                    <!-- その他のコード省略 -->
+
+                                    <!-- レビュー表示セクション -->
+                                    <div class="reviews-section mt-4">
+                                        <h2>レビュー一覧</h2>
+                                        <div th:if="${#lists.isEmpty(reviews)}">
+                                            <p>まだレビューがありません。</p>
+                                        </div>
+                                        <div th:each="review : ${reviews}" class="review-item mb-4">
+                                            <div class="review-header">
+                                                <p><strong th:text="${review.user.name}">ユーザー名</strong></p>
+                                                <p class="text-muted small" th:text="${#temporals.format(review.createdAt, 'yyyy-MM-dd HH:mm')}">投稿日</p>
+                                            </div>
+                                            <div class="review-content">
+                                                <p th:text="${review.content}">レビュー内容</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 無料会員、有料会員、未ログインの処理を続ける -->
+                                <!-- その他のコード省略 -->
+                            </div>                                                                                             
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- フッター -->
+        <div th:replace="~{fragment :: footer}"></div>
+    </div>    
+    
+    <div th:replace="~{fragment :: scripts}"></div>  
+
+    <!-- Flatpickr -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+    <script th:src="@{/js/flatpickr.js}"></script>  
+
+    <script th:inline="javascript">
+        const sessionId = /*[[${sessionId}]]*/"defaultSessionId";
+        const restaurantId = /*[[${restaurant.id}]]*/"defaultRestaurantId";
+
+        document.addEventListener('DOMContentLoaded', function() {
+            let maxDate = new Date();
+            maxDate.setMonth(maxDate.getMonth() + 3); // 最大3ヶ月先まで選択可能
+
+            let minDate = new Date();
+            minDate.setDate(minDate.getDate() + 1); // 今日の翌日から選択可能
+
+            // 予約日用のflatpickr設定
+            const reservationDateInput = document.querySelector('#reservationDate');
+            if (reservationDateInput) {
+                flatpickr(reservationDateInput, {
+                    locale: 'ja',
+                    minDate: minDate,
+                    maxDate: maxDate,
+                    dateFormat: "Y-m-d",
+                    defaultDate: reservationDateInput.value || minDate // すでに選択済みならその値を、なければ翌日
+                });
+            }
+
+            const reservationTimeInput = document.querySelector('#reservationTime');
+            const openingTime = document.querySelector('#openingTime').textContent.trim().replace('開店: ', '') || '09:00'; 
+            const closingTime = document.querySelector('#closingTime').textContent.trim().replace('閉店: ', '') || '22:00';
+
+            if (reservationTimeInput) {
+                updateReservationTime(openingTime, closingTime); 
+            }
+
+            function updateReservationTime(openingTime, closingTime) {
+                let timeOptions = [];
+                let currentTime = openingTime;
+
+                while (currentTime < closingTime) {
+                    timeOptions.push(currentTime);
+                    currentTime = incrementTime(currentTime, 1); // 1時間ごとに追加
+                }
+
+                reservationTimeInput.innerHTML = ''; 
+                timeOptions.forEach(function(time) {
+                    let option = document.createElement('option');
+                    option.value = time;
+                    option.textContent = time;
+                    reservationTimeInput.appendChild(option);
+                });
+
+                const selectedTime = reservationTimeInput.getAttribute('data-selected-time');
+                if (selectedTime) {
+                    reservationTimeInput.value = selectedTime;
+                }
+            }
+
+            function incrementTime(time, hours) {
+                let [hour, minute] = time.split(':').map(Number);
+                hour = (hour + hours) % 24; // 24時間を超えないように
+                return hour.toString().padStart(2, '0') + ':' + minute.toString().padStart(2, '0');
+            }
+        });
+    </script>
+
+</body>
+</html>

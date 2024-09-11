@@ -1,0 +1,159 @@
+package com.example.nagoyameshi.controller;
+
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.example.nagoyameshi.entity.Category;
+import com.example.nagoyameshi.entity.Restaurant;
+import com.example.nagoyameshi.entity.Review; // レビューエンティティのインポート
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.form.ReservationInputForm;
+import com.example.nagoyameshi.repository.CategoryRepository;
+import com.example.nagoyameshi.repository.RestaurantRepository;
+import com.example.nagoyameshi.repository.ReviewRepository; // ReviewRepositoryのインポート
+import com.example.nagoyameshi.security.UserDetailsImpl;
+import com.example.nagoyameshi.service.FavoriteService;
+
+@Controller
+@RequestMapping("/restaurants")
+public class RestaurantController {
+
+	private final RestaurantRepository restaurantRepository;
+	private final CategoryRepository categoryRepository;
+	private final ReviewRepository reviewRepository; // ReviewRepositoryの追加
+	private final FavoriteService favoriteService;
+
+	public RestaurantController(RestaurantRepository restaurantRepository,
+			CategoryRepository categoryRepository,
+			ReviewRepository reviewRepository, // ReviewRepositoryの初期化
+			FavoriteService favoriteService) {
+		this.restaurantRepository = restaurantRepository;
+		this.categoryRepository = categoryRepository;
+		this.reviewRepository = reviewRepository; // 初期化
+		this.favoriteService = favoriteService;
+	}
+
+	// レストラン一覧表示
+	@GetMapping
+	public String index(@RequestParam(name = "keyword", required = false) String keyword,
+			@RequestParam(name = "price", required = false) Integer price,
+			@RequestParam(name = "capacity", required = false) Integer capacity,
+			@RequestParam(name = "category", required = false) Integer categoryId,
+			@RequestParam(name = "order", required = false, defaultValue = "createdAtDesc") String order,
+			@PageableDefault(page = 0, size = 5, sort = "id", direction = Direction.ASC) Pageable pageable,
+			Model model) {
+
+		// ここでカテゴリ一覧をモデルに追加
+		List<Category> categories = categoryRepository.findAll();
+		model.addAttribute("categories", categories);
+
+		Page<Restaurant> restaurantPage;
+
+		// カテゴリIDが指定されている場合の処理
+		if (categoryId != null) {
+			if ("priceAsc".equals(order)) {
+				restaurantPage = restaurantRepository.findByCategory_IdOrderByPriceAsc(categoryId, pageable);
+			} else {
+				restaurantPage = restaurantRepository.findByCategory_IdOrderByCreatedAtDesc(categoryId, pageable);
+			}
+		} else if (keyword != null && !keyword.isEmpty()) {
+			if ("priceAsc".equals(order)) {
+				restaurantPage = restaurantRepository.findByNameLikeOrAddressLikeOrderByPriceAsc("%" + keyword + "%",
+						"%" + keyword + "%", pageable);
+			} else {
+				restaurantPage = restaurantRepository.findByNameLikeOrAddressLikeOrderByCreatedAtDesc(
+						"%" + keyword + "%", "%" + keyword + "%", pageable);
+			}
+		} else if (price != null) {
+			if (price == 10000) {
+				if ("priceAsc".equals(order)) {
+					restaurantPage = restaurantRepository.findByPriceGreaterThanEqualOrderByPriceAsc(10000, pageable);
+				} else {
+					restaurantPage = restaurantRepository.findByPriceGreaterThanEqualOrderByCreatedAtDesc(10000,
+							pageable);
+				}
+			} else {
+				int minPrice = (price / 1000) * 1000;
+				int maxPrice = price;
+				if ("priceAsc".equals(order)) {
+					restaurantPage = restaurantRepository.findByPriceBetweenOrderByPriceAsc(minPrice, maxPrice,
+							pageable);
+				} else {
+					restaurantPage = restaurantRepository.findByPriceBetweenOrderByCreatedAtDesc(minPrice, maxPrice,
+							pageable);
+				}
+			}
+		} else if (capacity != null) {
+			if ("priceAsc".equals(order)) {
+				restaurantPage = restaurantRepository.findByCapacityGreaterThanEqualOrderByPriceAsc(capacity, pageable);
+			} else {
+				restaurantPage = restaurantRepository.findByCapacityGreaterThanEqualOrderByCreatedAtDesc(capacity,
+						pageable);
+			}
+		} else {
+			if ("priceAsc".equals(order)) {
+				restaurantPage = restaurantRepository.findAllByOrderByPriceAsc(pageable);
+			} else {
+				restaurantPage = restaurantRepository.findAllByOrderByCreatedAtDesc(pageable);
+			}
+		}
+
+		model.addAttribute("restaurantPage", restaurantPage);
+		model.addAttribute("keyword", keyword);
+		model.addAttribute("price", price);
+		model.addAttribute("capacity", capacity);
+		model.addAttribute("categoryId", categoryId);
+		model.addAttribute("order", order);
+
+		return "restaurants/index";
+	}
+
+	// レストラン詳細ページ表示
+	@GetMapping("/{id}")
+	public String show(@PathVariable(name = "id") Integer id, @AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+			Model model) {
+		Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
+		if (optionalRestaurant.isEmpty()) {
+			model.addAttribute("errorMessage", "指定されたレストランが見つかりませんでした。");
+			return "errorPage";
+		}
+		Restaurant restaurant = optionalRestaurant.get();
+
+		// ログインしているユーザーがお気に入り登録しているかどうかを確認
+		User user = userDetailsImpl != null ? userDetailsImpl.getUser() : null;
+		boolean isFavorite = user != null && favoriteService.isFavorite(restaurant, user);
+		model.addAttribute("isFavorite", isFavorite);
+
+		// レビューの取得
+		List<Review> reviews = reviewRepository.findByRestaurantOrderByCreatedAtDesc(restaurant);
+		model.addAttribute("reviews", reviews);
+
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+		String formattedOpeningTime = restaurant.getOpeningTime() != null
+				? restaurant.getOpeningTime().format(timeFormatter)
+				: "未定";
+		String formattedClosingTime = restaurant.getClosingTime() != null
+				? restaurant.getClosingTime().format(timeFormatter)
+				: "未定";
+
+		model.addAttribute("formattedOpeningTime", formattedOpeningTime);
+		model.addAttribute("formattedClosingTime", formattedClosingTime);
+		model.addAttribute("reservationInputForm", new ReservationInputForm());
+		model.addAttribute("restaurant", restaurant);
+
+		return "restaurants/show";
+	}
+}

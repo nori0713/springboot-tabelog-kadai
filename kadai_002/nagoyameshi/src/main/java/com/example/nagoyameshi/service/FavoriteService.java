@@ -18,12 +18,20 @@ public class FavoriteService {
 
 	@Transactional
 	public void create(Restaurant restaurant, User user) {
-		Favorite favorite = new Favorite();
+		if (!isFavorite(restaurant, user)) {
+			Favorite favorite = new Favorite();
+			favorite.setRestaurant(restaurant);
+			favorite.setUser(user);
+			favoriteRepository.save(favorite);
+		}
+	}
 
-		favorite.setRestaurant(restaurant);
-		favorite.setUser(user);
-
-		favoriteRepository.save(favorite);
+	@Transactional
+	public void delete(Restaurant restaurant, User user) {
+		Favorite favorite = favoriteRepository.findByRestaurantAndUser(restaurant, user);
+		if (favorite != null) {
+			favoriteRepository.delete(favorite);
+		}
 	}
 
 	public boolean isFavorite(Restaurant restaurant, User user) {

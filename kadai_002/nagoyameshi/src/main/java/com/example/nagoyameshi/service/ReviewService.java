@@ -1,5 +1,7 @@
 package com.example.nagoyameshi.service;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,22 +25,23 @@ public class ReviewService {
 	@Transactional
 	public void create(Restaurant restaurant, User user, ReviewRegisterForm reviewRegisterForm) {
 		Review review = new Review();
-
 		review.setRestaurant(restaurant);
 		review.setUser(user);
 		review.setScore(reviewRegisterForm.getScore());
 		review.setContent(reviewRegisterForm.getContent());
-
 		reviewRepository.save(review);
 	}
 
 	@Transactional
 	public void update(ReviewEditForm reviewEditForm) {
-		Review review = reviewRepository.getReferenceById(reviewEditForm.getId());
+		Optional<Review> reviewOpt = reviewRepository.findById(reviewEditForm.getId());
+		if (reviewOpt.isEmpty()) {
+			throw new IllegalArgumentException("指定されたレビューが見つかりません。");
+		}
 
+		Review review = reviewOpt.get();
 		review.setScore(reviewEditForm.getScore());
 		review.setContent(reviewEditForm.getContent());
-
 		reviewRepository.save(review);
 	}
 
@@ -53,6 +56,6 @@ public class ReviewService {
 
 	// 検索キーワードによるレビューの取得（レストラン名・ユーザー名）
 	public Page<Review> searchReviews(String keyword, Pageable pageable) {
-		return reviewRepository.findByRestaurantNameContainingOrUserNameContaining(keyword, keyword, pageable);
+		return reviewRepository.findByRestaurant_NameContainingOrUser_NameContaining(keyword, keyword, pageable);
 	}
 }

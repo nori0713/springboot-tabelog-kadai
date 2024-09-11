@@ -24,34 +24,35 @@
                         <!-- キーワード検索フォーム -->
                         <form method="get" th:action="@{/restaurants}" class="w-100 mb-3">
                             <div class="input-group">
-                                <input type="text" class="form-control" name="keyword" th:value="${keyword}" placeholder="飲食店名">
+                                <input type="text" class="form-control" name="keyword" th:value="${keyword}" placeholder="飲食店名を入力">
                                 <button type="submit" class="btn text-white shadow-sm nagoyameshi-btn">検索</button>
                             </div>
                         </form>
 
-                        <!-- カテゴリ検索フォーム -->
-                        <div class="card mb-3">
-                            <div class="card-header">
-                                カテゴリで探す
-                            </div>
-                            <div class="card-body">
-                                <form method="get" th:action="@{/restaurants}" class="w-100">
-                                    <div class="form-group mb-3">
-                                        <select class="form-control form-select" name="category">
-                                            <option value="" hidden>選択してください</option>
-                                            <option value="和食" th:selected="${category == '和食'}">和食</option>
-                                            <option value="洋食" th:selected="${category == '洋食'}">洋食</option>
-                                            <option value="イタリアン" th:selected="${category == 'イタリアン'}">イタリアン</option>
-                                            <option value="フレンチ" th:selected="${category == 'フレンチ'}">フレンチ</option>
-                                            <option value="中華" th:selected="${category == '中華'}">中華</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <button type="submit" class="btn text-white shadow-sm w-100 nagoyameshi-btn">検索</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+						<!-- カテゴリ検索フォーム -->
+						<div class="card mb-3">
+						    <div class="card-header">
+						        カテゴリで探す
+						    </div>
+						    <div class="card-body">
+						        <form method="get" th:action="@{/restaurants}" class="w-100">
+						            <div class="form-group mb-3">
+						                <select class="form-control form-select" name="category">
+						                    <option value="" hidden>カテゴリを選択してください</option>
+						                    <!-- カテゴリ一覧を動的に表示 -->
+						                    <option th:each="category : ${categories}" 
+						                            th:value="${category.id}" 
+						                            th:text="${category.name}" 
+						                            th:selected="${category.id == categoryId}">
+						                    </option>
+						                </select>
+						            </div>
+						            <div class="form-group">
+						                <button type="submit" class="btn text-white shadow-sm w-100 nagoyameshi-btn">検索</button>
+						            </div>
+						        </form>
+						    </div>
+						</div>
 
                         <!-- 予算で検索 -->
                         <div class="card mb-3">
@@ -112,9 +113,12 @@
                                 <input th:if="${keyword}" type="hidden" name="keyword" th:value="${keyword}">
                                 <input th:if="${price}" type="hidden" name="price" th:value="${price}">
                                 <input th:if="${capacity}" type="hidden" name="capacity" th:value="${capacity}">
+                                <input th:if="${categoryId}" type="hidden" name="category" th:value="${categoryId}">
                                 <select class="form-select form-select-sm" name="order" onChange="this.form.submit();">
                                     <option value="createdAtDesc" th:selected="${order == 'createdAtDesc' || order == null}">新着順</option>
                                     <option value="priceAsc" th:selected="${order == 'priceAsc'}">料金が安い順</option>
+                                    <option value="nameAsc" th:selected="${order == 'nameAsc'}">名前順</option>
+                                    <option value="capacityDesc" th:selected="${order == 'capacityDesc'}">予約人数が多い順</option>
                                 </select>
                             </form>
                         </div>
@@ -160,15 +164,15 @@
                                 <ul class="pagination">
                                     <li class="page-item">
                                         <span th:if="${restaurantPage.first}" class="page-link disabled">前</span>
-                                        <a th:unless="${restaurantPage.first}" th:href="@{/restaurants(page=${restaurantPage.number - 1}, keyword=${keyword}, price=${price}, capacity=${capacity}, order=${order})}" class="page-link nagoyameshi-page-link">前</a>
+                                        <a th:unless="${restaurantPage.first}" th:href="@{/restaurants(page=${restaurantPage.number - 1}, keyword=${keyword}, price=${price}, capacity=${capacity}, category=${categoryId}, order=${order})}" class="page-link nagoyameshi-page-link">前</a>
                                     </li>
                                     <li th:each="i : ${#numbers.sequence(0, restaurantPage.totalPages - 1)}" class="page-item">
                                         <span th:if="${i == restaurantPage.number}" class="page-link active nagoyameshi-active" th:text="${i + 1}"></span>
-                                        <a th:unless="${i == restaurantPage.number}" th:href="@{/restaurants(page=${i}, keyword=${keyword}, price=${price}, capacity=${capacity}, order=${order})}" class="page-link nagoyameshi-page-link" th:text="${i + 1}"></a>
+                                        <a th:unless="${i == restaurantPage.number}" th:href="@{/restaurants(page=${i}, keyword=${keyword}, price=${price}, capacity=${capacity}, category=${categoryId}, order=${order})}" class="page-link nagoyameshi-page-link" th:text="${i + 1}"></a>
                                     </li>
                                     <li class="page-item">
                                         <span th:if="${restaurantPage.last}" class="page-link disabled">次</span>
-                                        <a th:unless="${restaurantPage.last}" th:href="@{/restaurants(page=${restaurantPage.number + 1}, keyword=${keyword}, price=${price}, capacity=${capacity}, order=${order})}" class="page-link nagoyameshi-page-link">次</a>
+                                        <a th:unless="${restaurantPage.last}" th:href="@{/restaurants(page=${restaurantPage.number + 1}, keyword=${keyword}, price=${price}, capacity=${capacity}, category=${categoryId}, order=${order})}" class="page-link nagoyameshi-page-link">次</a>
                                     </li>
                                 </ul>
                             </nav>

@@ -1,4 +1,10 @@
--- 飲食店（Restaurant）テーブル --
+-- カテゴリテーブルの作成
+CREATE TABLE IF NOT EXISTS categories (
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   name VARCHAR(100) NOT NULL
+);
+
+-- 飲食店（Restaurant）テーブルの作成
 CREATE TABLE IF NOT EXISTS restaurants (
    id INT AUTO_INCREMENT PRIMARY KEY,
    name VARCHAR (255) NOT NULL,
@@ -8,12 +14,13 @@ CREATE TABLE IF NOT EXISTS restaurants (
    postal_code VARCHAR (50) NOT NULL,
    address VARCHAR (255) NOT NULL,
    phone_number VARCHAR (50) NOT NULL,
-   category VARCHAR (100) NOT NULL,
+   category_id INT NOT NULL,  -- カテゴリの外部キー
    capacity INT NOT NULL,
-   opening_time TIME,      -- 開店時間
-   closing_time TIME,      -- 閉店時間
+   opening_time TIME,         -- 開店時間
+   closing_time TIME,         -- 閉店時間
    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+   FOREIGN KEY (category_id) REFERENCES categories(id) -- カテゴリテーブルとのリレーション
 );
 
 -- ロール（role）テーブル --

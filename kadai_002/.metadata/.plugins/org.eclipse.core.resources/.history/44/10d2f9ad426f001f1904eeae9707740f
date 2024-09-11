@@ -1,0 +1,53 @@
+package com.example.nagoyameshi.controller;
+
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.example.nagoyameshi.entity.Restaurant;
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.repository.FavoriteRepository;
+import com.example.nagoyameshi.repository.RestaurantRepository;
+import com.example.nagoyameshi.security.UserDetailsImpl;
+import com.example.nagoyameshi.service.FavoriteService;
+
+import jakarta.persistence.EntityNotFoundException;
+
+@Controller
+public class FavoriteController {
+    private final FavoriteRepository favoriteRepository;
+    private final RestaurantRepository restaurantRepository;
+    private final FavoriteService favoriteService;
+
+    public FavoriteController(FavoriteRepository favoriteRepository, RestaurantRepository restaurantRepository,
+            FavoriteService favoriteService) {
+        this.favoriteRepository = favoriteRepository;
+        this.restaurantRepository = restaurantRepository;
+        this.favoriteService = favoriteService;
+    }
+
+    @PostMapping("/restaurants/{restaurantId}/favorites/toggle")
+    public String toggleFavorite(@PathVariable(name = "restaurantId") Integer restaurantId,
+            @AuthenticationPrincipal UserDetailsImpl userDetailsImpl, RedirectAttributes redirectAttributes) {
+        try {
+            Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                    .orElseThrow(() -> new EntityNotFoundException("指定された飲食店が見つかりませんでした。"));
+            User user = userDetailsImpl.getUser();
+
+            // すでにお気に入りに登録されているか確認
+            if (favoriteService.isFavorite(restaurant, user)) {
+                favoriteService.delete(restaurant, user);
+                redirectAttributes.addFlashAttribute("successMessage", "お気に入りを解除しました。");
+            } else {
+                favoriteService.create(restaurant, user);
+                redirectAttributes.addFlashAttribute("successMessage", "お気に入りに追加しました。");
+            }
+        } catch (EntityNotFoundException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/restaurants/" + restaurantId;
+    }
+}

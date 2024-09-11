@@ -48,7 +48,10 @@
                                         <p th:if="${restaurant.address}"><strong>住所:</strong> <span th:text="${restaurant.address}"></span></p>
                                         <p th:if="${restaurant.postalCode}"><strong>郵便番号:</strong> <span th:text="${restaurant.postalCode}"></span></p>
                                      	<p th:if="${restaurant.phoneNumber}"><strong>電話番号:</strong> <span th:text="${restaurant.phoneNumber}"></span></p>
-                                        <p th:if="${restaurant.category}"><strong>カテゴリ:</strong> <span th:text="${restaurant.category}"></span></p>
+                                        <p th:if="${restaurant.category != null}">
+                                            <strong>カテゴリ:</strong> 
+                                            <span th:text="${restaurant.category.name}"></span> <!-- カテゴリ名を表示 -->
+                                        </p>
                                         <p><strong>料金:</strong> <span th:text="${restaurant.price}"></span>円</p>
                                         <p><strong>説明:</strong> <span th:text="${restaurant.description}"></span></p>
 										<p><strong>予約最大人数:</strong> <span th:text="${restaurant.capacity}"></span>人</p>

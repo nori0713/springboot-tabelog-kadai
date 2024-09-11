@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>カテゴリ一覧</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+
+    <!-- ヘッダー -->
+    <header th:replace="~{fragment :: header}"></header>
+
+    <div class="container mt-4">
+        <h1>カテゴリ一覧</h1>
+
+        <!-- 成功メッセージの表示 -->
+        <div th:if="${successMessage}" class="alert alert-success" role="alert">
+            <p th:text="${successMessage}"></p>
+        </div>
+
+        <!-- カテゴリの一覧表示 -->
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>カテゴリ名</th>
+                    <th>アクション</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="category : ${categories}">
+                    <td th:text="${category.id}"></td>
+                    <td th:text="${category.name}"></td>
+                    <td>
+                        <form th:action="@{/admin/categories/{id}/delete(id=${category.id})}" method="post">
+                            <button type="submit" class="btn btn-danger btn-sm">削除</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 新規カテゴリ追加ボタン -->
+        <a class="btn btn-primary" th:href="@{/admin/categories/register}">新規カテゴリ追加</a>
+    </div>
+
+    <!-- フッター -->
+    <footer th:replace="~{fragment :: footer}"></footer>
+
+</body>
+</html>

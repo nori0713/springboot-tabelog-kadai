@@ -1,0 +1,76 @@
+package com.example.nagoyameshi.controller;
+
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.example.nagoyameshi.entity.Restaurant;
+import com.example.nagoyameshi.entity.Review;
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.form.ReservationInputForm;
+import com.example.nagoyameshi.repository.RestaurantRepository;
+import com.example.nagoyameshi.repository.ReviewRepository;
+import com.example.nagoyameshi.security.UserDetailsImpl;
+import com.example.nagoyameshi.service.FavoriteService;
+
+@Controller
+public class RestaurantController {
+
+    private final RestaurantRepository restaurantRepository;
+    private final ReviewRepository reviewRepository;
+    private final FavoriteService favoriteService;
+
+    public RestaurantController(RestaurantRepository restaurantRepository, ReviewRepository reviewRepository,
+                                FavoriteService favoriteService) {
+        this.restaurantRepository = restaurantRepository;
+        this.reviewRepository = reviewRepository;
+        this.favoriteService = favoriteService;
+    }
+
+    @GetMapping("/restaurants/{id}")
+    public String show(@PathVariable("id") Integer id, @AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+                       Model model, RedirectAttributes redirectAttributes) {
+
+        // レストラン取得
+        Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
+        if (optionalRestaurant.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "指定されたレストランが見つかりませんでした。");
+            return "redirect:/restaurants";
+        }
+
+        Restaurant restaurant = optionalRestaurant.get();
+        model.addAttribute("restaurant", restaurant);
+
+        // 日時フォーマット
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        String formattedOpeningTime = restaurant.getOpeningTime() != null
+                ? restaurant.getOpeningTime().format(timeFormatter)
+                : "未定";
+        String formattedClosingTime = restaurant.getClosingTime() != null
+                ? restaurant.getClosingTime().format(timeFormatter)
+                : "未定";
+        model.addAttribute("formattedOpeningTime", formattedOpeningTime);
+        model.addAttribute("formattedClosingTime", formattedClosingTime);
+
+        // レビューの取得
+        List<Review> reviews = reviewRepository.findByRestaurantOrderByCreatedAtDesc(restaurant);
+        model.addAttribute("reviews", reviews);
+
+        // ログインユーザーがいる場合にお気に入りかどうかを確認
+        User user = userDetailsImpl != null ? userDetailsImpl.getUser() : null;
+        boolean isFavorite = user != null && favoriteService.isFavorite(restaurant, user);
+        model.addAttribute("isFavorite", isFavorite);
+
+        // 予約フォームの準備
+        model.addAttribute("reservationInputForm", new ReservationInputForm());
+
+        return "restaurants/show";
+    }
+}

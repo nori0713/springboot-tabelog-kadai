@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RestaurantEditForm {
+
 	@NotNull
 	private Integer id;
 
@@ -30,8 +31,8 @@ public class RestaurantEditForm {
 	@Min(value = 1, message = "料金は1円以上に設定してください。")
 	private Integer price;
 
-	@NotBlank(message = "カテゴリを入力してください。（例）和食、ラーメン")
-	private String category;
+	@NotNull(message = "カテゴリを選択してください。")
+	private Integer categoryId; // String型からCategory型に変更
 
 	@NotBlank(message = "郵便番号を入力してください。")
 	private String postalCode;
@@ -46,11 +47,10 @@ public class RestaurantEditForm {
 	@Min(value = 1, message = "予約最大人数は1人以上に設定してください。")
 	private Integer capacity;
 
-	// 追加部分: 営業時間
+	// 営業時間の追加
 	@NotNull(message = "開店時間を入力してください。")
 	private LocalTime openingTime;
 
 	@NotNull(message = "閉店時間を入力してください。")
 	private LocalTime closingTime;
-
 }

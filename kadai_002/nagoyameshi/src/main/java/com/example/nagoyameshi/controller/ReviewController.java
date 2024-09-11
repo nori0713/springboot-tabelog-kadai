@@ -1,5 +1,7 @@
 package com.example.nagoyameshi.controller;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -42,7 +44,13 @@ public class ReviewController {
 	@GetMapping
 	public String index(@PathVariable(name = "restaurantId") Integer restaurantId,
 			@PageableDefault(page = 0, size = 10, sort = "id") Pageable pageable, Model model) {
-		Restaurant restaurant = restaurantRepository.getReferenceById(restaurantId);
+		Optional<Restaurant> restaurantOpt = restaurantRepository.findById(restaurantId);
+		if (restaurantOpt.isEmpty()) {
+			model.addAttribute("errorMessage", "指定された飲食店が見つかりませんでした。");
+			return "error/404"; // 適切なエラーページにリダイレクト
+		}
+
+		Restaurant restaurant = restaurantOpt.get();
 		Page<Review> reviewPage = reviewRepository.findByRestaurantOrderByCreatedAtDesc(restaurant, pageable);
 
 		model.addAttribute("restaurant", restaurant);
@@ -53,9 +61,13 @@ public class ReviewController {
 
 	@GetMapping("/register")
 	public String register(@PathVariable(name = "restaurantId") Integer restaurantId, Model model) {
-		Restaurant restaurant = restaurantRepository.getReferenceById(restaurantId);
+		Optional<Restaurant> restaurantOpt = restaurantRepository.findById(restaurantId);
+		if (restaurantOpt.isEmpty()) {
+			model.addAttribute("errorMessage", "指定された飲食店が見つかりませんでした。");
+			return "error/404"; // エラーページ
+		}
 
-		model.addAttribute("restaurant", restaurant);
+		model.addAttribute("restaurant", restaurantOpt.get());
 		model.addAttribute("reviewRegisterForm", new ReviewRegisterForm());
 
 		return "reviews/register";
@@ -68,7 +80,13 @@ public class ReviewController {
 			BindingResult bindingResult,
 			RedirectAttributes redirectAttributes,
 			Model model) {
-		Restaurant restaurant = restaurantRepository.getReferenceById(restaurantId);
+		Optional<Restaurant> restaurantOpt = restaurantRepository.findById(restaurantId);
+		if (restaurantOpt.isEmpty()) {
+			model.addAttribute("errorMessage", "指定された飲食店が見つかりませんでした。");
+			return "error/404"; // エラーページ
+		}
+
+		Restaurant restaurant = restaurantOpt.get();
 		User user = userDetailsImpl.getUser();
 
 		if (bindingResult.hasErrors()) {
@@ -85,8 +103,16 @@ public class ReviewController {
 	@GetMapping("/{reviewId}/edit")
 	public String edit(@PathVariable(name = "restaurantId") Integer restaurantId,
 			@PathVariable(name = "reviewId") Integer reviewId, Model model) {
-		Restaurant restaurant = restaurantRepository.getReferenceById(restaurantId);
-		Review review = reviewRepository.getReferenceById(reviewId);
+		Optional<Restaurant> restaurantOpt = restaurantRepository.findById(restaurantId);
+		Optional<Review> reviewOpt = reviewRepository.findById(reviewId);
+
+		if (restaurantOpt.isEmpty() || reviewOpt.isEmpty()) {
+			model.addAttribute("errorMessage", "指定された飲食店またはレビューが見つかりませんでした。");
+			return "error/404"; // エラーページ
+		}
+
+		Restaurant restaurant = restaurantOpt.get();
+		Review review = reviewOpt.get();
 
 		ReviewEditForm reviewEditForm = new ReviewEditForm(review.getId(), review.getScore(), review.getContent());
 
@@ -104,8 +130,16 @@ public class ReviewController {
 			BindingResult bindingResult,
 			RedirectAttributes redirectAttributes,
 			Model model) {
-		Restaurant restaurant = restaurantRepository.getReferenceById(restaurantId);
-		Review review = reviewRepository.getReferenceById(reviewId);
+		Optional<Restaurant> restaurantOpt = restaurantRepository.findById(restaurantId);
+		Optional<Review> reviewOpt = reviewRepository.findById(reviewId);
+
+		if (restaurantOpt.isEmpty() || reviewOpt.isEmpty()) {
+			model.addAttribute("errorMessage", "指定された飲食店またはレビューが見つかりませんでした。");
+			return "error/404"; // エラーページ
+		}
+
+		Restaurant restaurant = restaurantOpt.get();
+		Review review = reviewOpt.get();
 
 		if (bindingResult.hasErrors()) {
 			model.addAttribute("restaurant", restaurant);
@@ -120,9 +154,16 @@ public class ReviewController {
 	}
 
 	@PostMapping("/{reviewId}/delete")
-	public String delete(@PathVariable(name = "reviewId") Integer reviewId, RedirectAttributes redirectAttributes) {
-		reviewRepository.deleteById(reviewId);
+	public String delete(@PathVariable(name = "restaurantId") Integer restaurantId,
+			@PathVariable(name = "reviewId") Integer reviewId,
+			RedirectAttributes redirectAttributes, Model model) {
+		Optional<Review> reviewOpt = reviewRepository.findById(reviewId);
+		if (reviewOpt.isEmpty()) {
+			model.addAttribute("errorMessage", "指定されたレビューが見つかりませんでした。");
+			return "error/404"; // エラーページ
+		}
 
+		reviewRepository.deleteById(reviewId);
 		redirectAttributes.addFlashAttribute("successMessage", "レビューを削除しました。");
 
 		return "redirect:/restaurants/{restaurantId}";

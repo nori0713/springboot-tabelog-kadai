@@ -1,13 +1,16 @@
 package com.example.nagoyameshi.entity;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime; // 追加
+import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -43,13 +46,13 @@ public class Restaurant {
 	@Column(name = "phone_number", nullable = false)
 	private String phoneNumber;
 
-	@Column(name = "category", nullable = false)
-	private String category;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "category_id", nullable = false)
+	private Category category;
 
 	@Column(name = "capacity", nullable = false)
 	private Integer capacity;
 
-	// 追加部分
 	@Column(name = "opening_time", nullable = false)
 	private LocalTime openingTime;
 

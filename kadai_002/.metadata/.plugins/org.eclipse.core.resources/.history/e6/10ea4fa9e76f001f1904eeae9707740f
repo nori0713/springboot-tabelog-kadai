@@ -1,0 +1,73 @@
+/* General Styles */
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background-color: #f5f5dc; 
+    margin: 0;
+    padding: 0;
+}
+
+/* ナビゲーションバー */
+.nagoyameshi-navbar {
+    background-color: burlywood;
+}
+
+.nagoyameshi-navbar .navbar-brand {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.nagoyameshi-navbar .navbar-brand img {
+    max-height: 40px;
+    margin-right: 10px;
+}
+
+.nagoyameshi-navbar .navbar-brand:hover {
+    color: #dddddd;
+}
+
+/* フッター */
+footer {
+    background-color: burlywood;
+    color: #ffffff;
+    padding: 10px 0;
+    text-align: center;
+    width: 100%;
+}    
+
+/* レビューカードのデザイン */
+.review-section .card {
+    width: 22rem; /* カード幅を22remに設定 */
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+}
+
+/* レビューセクションの中央寄せと2列表示 */
+.review-section .row {
+    justify-content: center; /* 中央寄せ */
+}
+
+.review-section .col-md-6 {
+    display: flex;
+    justify-content: center;
+    max-width: 50%; /* カード幅を50%に調整し、余白を確保 */
+}
+
+/* 星のデザイン */
+.review-section .stars-outer {
+    display: inline-block;
+    color: #ffa500; /* 星に色をつける */
+}
+
+/* スクリーンサイズによって2列に調整 */
+@media (min-width: 768px) {
+    .review-section .col-md-6 {
+        max-width: 46%; /* 中型スクリーンでの調整 */
+    }
+}
+
+@media (min-width: 1200px) {
+    .review-section .col-md-6 {
+        max-width: 40%; /* 大きな画面ではカード幅を40%に設定 */
+    }
+}

@@ -1,0 +1,202 @@
+package com.example.nagoyameshi.controller;
+
+import java.io.IOException;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.example.nagoyameshi.entity.Category;
+import com.example.nagoyameshi.entity.Restaurant;
+import com.example.nagoyameshi.form.RestaurantEditForm;
+import com.example.nagoyameshi.form.RestaurantRegisterForm;
+import com.example.nagoyameshi.repository.CategoryRepository;
+import com.example.nagoyameshi.repository.RestaurantRepository;
+import com.example.nagoyameshi.service.RestaurantService;
+
+@Controller
+@RequestMapping("/admin/restaurant")
+public class AdminRestaurantController {
+	private final RestaurantRepository restaurantRepository;
+	private final RestaurantService restaurantService;
+	private final CategoryRepository categoryRepository;
+
+	public AdminRestaurantController(RestaurantRepository restaurantRepository,
+			RestaurantService restaurantService,
+			CategoryRepository categoryRepository) {
+		this.restaurantRepository = restaurantRepository;
+		this.restaurantService = restaurantService;
+		this.categoryRepository = categoryRepository;
+	}
+
+	@GetMapping
+	public String index(Model model,
+			@PageableDefault(page = 0, size = 7, sort = "id", direction = Direction.ASC) Pageable pageable,
+			@RequestParam(name = "keyword", required = false) String keyword) {
+
+		if (keyword == null || keyword.equals("null")) {
+			keyword = "";
+		}
+
+		Page<Restaurant> restaurantPage;
+
+		if (!keyword.isEmpty()) {
+			restaurantPage = restaurantRepository.findByNameLike("%" + keyword + "%", pageable);
+		} else {
+			restaurantPage = restaurantRepository.findAll(pageable);
+		}
+
+		// フォーマット用のDateTimeFormatterを作成
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+		// 各レストランの開店・閉店時間をフォーマット
+		List<Map<String, Object>> restaurantList = restaurantPage.map(restaurant -> {
+			Map<String, Object> restaurantMap = new HashMap<>();
+			restaurantMap.put("restaurant", restaurant);
+			restaurantMap.put("formattedOpeningTime", restaurant.getOpeningTime() != null
+					? restaurant.getOpeningTime().format(timeFormatter)
+					: "-");
+			restaurantMap.put("formattedClosingTime", restaurant.getClosingTime() != null
+					? restaurant.getClosingTime().format(timeFormatter)
+					: "-");
+			return restaurantMap;
+		}).getContent();
+
+		model.addAttribute("restaurantList", restaurantList);
+		model.addAttribute("restaurantPage", restaurantPage);
+		model.addAttribute("keyword", keyword);
+
+		return "admin/restaurant/index";
+	}
+
+	@GetMapping("/{id}")
+	public String show(@PathVariable(name = "id") Integer id, Model model) {
+		Restaurant restaurant = restaurantRepository.getReferenceById(id);
+
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+		String formattedOpeningTime = restaurant.getOpeningTime().format(timeFormatter);
+		String formattedClosingTime = restaurant.getClosingTime().format(timeFormatter);
+
+		model.addAttribute("restaurant", restaurant);
+		model.addAttribute("formattedOpeningTime", formattedOpeningTime);
+		model.addAttribute("formattedClosingTime", formattedClosingTime);
+
+		return "admin/restaurant/show";
+	}
+
+	@GetMapping("/register")
+	public String register(Model model) {
+		// カテゴリ一覧を取得してモデルに追加
+		List<Category> categories = categoryRepository.findAll();
+		model.addAttribute("categories", categories); // カテゴリデータを追加
+		model.addAttribute("restaurantRegisterForm", new RestaurantRegisterForm());
+
+		return "admin/restaurant/register";
+	}
+
+	@PostMapping("/create")
+	public String create(@ModelAttribute @Validated RestaurantRegisterForm restaurantRegisterForm,
+			BindingResult bindingResult,
+			RedirectAttributes redirectAttributes,
+			Model model) {
+		if (bindingResult.hasErrors()) {
+			// エラー時にカテゴリ選択肢を再度モデルに追加
+			List<Category> categories = categoryRepository.findAll();
+			model.addAttribute("categories", categories);
+			return "admin/restaurant/register";
+		}
+
+		try {
+			restaurantService.create(restaurantRegisterForm);
+			redirectAttributes.addFlashAttribute("successMessage", "飲食店を登録しました。");
+		} catch (IOException e) {
+			// ファイル操作に失敗した場合のエラーメッセージ
+			redirectAttributes.addFlashAttribute("errorMessage", "ファイルの保存に失敗しました: " + e.getMessage());
+			return "redirect:/admin/restaurant/register";
+		} catch (RuntimeException e) {
+			// その他の例外が発生した場合のエラーメッセージ
+			redirectAttributes.addFlashAttribute("errorMessage", "飲食店の登録に失敗しました: " + e.getMessage());
+			return "redirect:/admin/restaurant/register";
+		}
+
+		return "redirect:/admin/restaurant";
+	}
+
+	@GetMapping("/{id}/edit")
+	public String edit(@PathVariable(name = "id") Integer id, Model model) {
+		Restaurant restaurant = restaurantRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Invalid restaurant Id:" + id));
+
+		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+		String formattedOpeningTime = restaurant.getOpeningTime().format(timeFormatter);
+		String formattedClosingTime = restaurant.getClosingTime().format(timeFormatter);
+
+		RestaurantEditForm restaurantEditForm = new RestaurantEditForm(
+				restaurant.getId(),
+				restaurant.getName(),
+				null, // 画像はnullを使用（更新しない場合）
+				restaurant.getDescription(),
+				restaurant.getPrice(),
+				restaurant.getCategory().getId(), // カテゴリIDを渡す
+				restaurant.getPostalCode(),
+				restaurant.getAddress(),
+				restaurant.getPhoneNumber(),
+				restaurant.getCapacity(),
+				restaurant.getOpeningTime(),
+				restaurant.getClosingTime());
+
+		// カテゴリ一覧をモデルに追加
+		List<Category> categories = categoryRepository.findAll();
+		model.addAttribute("categories", categories);
+		model.addAttribute("restaurantEditForm", restaurantEditForm);
+		model.addAttribute("formattedOpeningTime", formattedOpeningTime);
+		model.addAttribute("formattedClosingTime", formattedClosingTime);
+
+		return "admin/restaurant/edit";
+	}
+
+	@PostMapping("/edit/{id}")
+	public String update(@PathVariable(name = "id") Integer id,
+	                     @ModelAttribute @Validated RestaurantEditForm restaurantEditForm,
+	                     BindingResult bindingResult,
+	                     RedirectAttributes redirectAttributes) {
+	    if (bindingResult.hasErrors()) {
+	        return "admin/restaurant/edit";
+	    }
+
+	    try {
+	        // ファイルアップロード処理
+	        restaurantService.update(id, restaurantEditForm);
+	        redirectAttributes.addFlashAttribute("successMessage", "飲食店を更新しました。");
+	    } catch (IOException e) {
+	        redirectAttributes.addFlashAttribute("errorMessage", "飲食店の更新に失敗しました: " + e.getMessage());
+	        return "redirect:/admin/restaurant/edit/" + id;
+	    }
+
+	    return "redirect:/admin/restaurant";
+	}
+
+	@PostMapping("/{id}/delete")
+	public String delete(@PathVariable(name = "id") Integer id, RedirectAttributes redirectAttributes) {
+		restaurantService.delete(id);
+		redirectAttributes.addFlashAttribute("successMessage", "飲食店を削除しました。");
+
+		return "redirect:/admin/restaurant";
+	}
+}

@@ -7,9 +7,13 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class RestaurantRegisterForm {
 
 	@NotBlank(message = "飲食店名を入力してください。")
@@ -24,8 +28,8 @@ public class RestaurantRegisterForm {
 	@Min(value = 1, message = "料金は1円以上に設定してください。")
 	private Integer price;
 
-	@NotBlank(message = "カテゴリを入力してください。（例）和食、ラーメン")
-	private String category;
+	@NotNull(message = "カテゴリを選択してください。")
+	private Integer categoryId;
 
 	@NotBlank(message = "郵便番号を入力してください。")
 	private String postalCode;
@@ -40,7 +44,6 @@ public class RestaurantRegisterForm {
 	@Min(value = 1, message = "予約最大人数は1人以上に設定してください。")
 	private Integer capacity;
 
-	// 追加部分: 営業時間
 	@NotNull(message = "開店時間を入力してください。")
 	private LocalTime openingTime;
 

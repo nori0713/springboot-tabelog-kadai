@@ -79,14 +79,11 @@
 							        <label for="category" class="col-form-label text-md-left fw-bold">カテゴリ</label>
 							    </div>
 							    <div class="col-md-8">
-							        <div th:if="${#fields.hasErrors('category')}" class="text-danger small mb-2" th:errors="*{category}"></div>
-							        <select class="form-control form-select" th:field="*{category}">
+							        <div th:if="${#fields.hasErrors('categoryId')}" class="text-danger small mb-2" th:errors="*{categoryId}"></div>
+							        <select class="form-control form-select" th:field="*{categoryId}">
 							            <option value="" hidden>カテゴリを選択してください</option>
-							            <option value="和食" th:selected="${category == '和食'}">和食</option>
-							            <option value="洋食" th:selected="${category == '洋食'}">洋食</option>
-							            <option value="イタリアン" th:selected="${category == 'イタリアン'}">イタリアン</option>
-							            <option value="フレンチ" th:selected="${category == 'フレンチ'}">フレンチ</option>
-							            <option value="中華" th:selected="${category == '中華'}">中華</option>
+							            <!-- カテゴリリストを繰り返して表示 -->
+							            <option th:each="category : ${categories}" th:value="${category.id}" th:text="${category.name}"></option>
 							        </select>
 							    </div>
 							</div>
