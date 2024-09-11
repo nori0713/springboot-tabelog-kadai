@@ -267,7 +267,12 @@
 			                            </div>
 			                            <div class="modal-body">
 			                                <p th:text="${restaurant.name + 'のレビューを削除してもよろしいですか？'}"></p>
-			                            
+			                            </div>
+										<div class="modal-footer">
+											<form th:action="@{/reviews/delete/{reviewId}(reviewId=${review.id})}" method="post">
+												<button type="submit" class="btn btn-danger">削除</button>
+											</form>
+										</div>
 					                </div>
 					            </div>
 					        </div>
