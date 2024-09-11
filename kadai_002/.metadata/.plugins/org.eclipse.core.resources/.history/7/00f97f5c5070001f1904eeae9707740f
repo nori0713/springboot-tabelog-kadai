@@ -258,25 +258,19 @@
 			                    <span th:text="${#dates.format(review.createdAt, 'yyyy年MM月dd日')}">日付</span>
 			                    <p class="card-text" th:text="${review.content}">レビュー内容</p>
 			                </div>
-							<div sec:authorize="isAuthenticated()" th:id="'deleteModal-' + ${review.id}" class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-							    <div class="modal-dialog">
-							        <div class="modal-content">
-							            <div class="modal-header">
-							                <h5 class="modal-title" id="exampleModalLabel">確認</h5>
-							                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-							            </div>
-							            <div class="modal-body">
-							                <p th:text="${restaurant.name + 'のレビューを削除してもよろしいですか？'}"></p>
-							            </div>
-							            <div class="modal-footer">
-							                <form th:action="@{/reviews/delete/{reviewId}(reviewId=${review.id})}" method="post">
-							                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-							                    <button type="submit" class="btn btn-danger">削除</button>
-							                </form>
-							            </div>
-							        </div>
-							    </div>
-							</div>
+			                <div th:id="'deleteModal-' + ${review.id}" class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+			                    <div class="modal-dialog">
+			                        <div class="modal-content">
+			                            <div class="modal-header">
+			                                <h5 class="modal-title" id="exampleModalLabel">確認</h5>
+			                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			                            </div>
+			                            <div class="modal-body">
+			                                <p th:text="${restaurant.name + 'のレビューを削除してもよろしいですか？'}"></p>
+			                            
+					                </div>
+					            </div>
+					        </div>
 					    </div>
 					</div>
                 </div>
