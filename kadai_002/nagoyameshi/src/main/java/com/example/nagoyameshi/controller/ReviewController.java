@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.nagoyameshi.entity.Restaurant;
@@ -74,17 +75,16 @@ public class ReviewController {
 		Restaurant restaurant = restaurantRepository.findById(restaurantId)
 				.orElseThrow(() -> new ResourceNotFoundException("指定された飲食店が見つかりませんでした。"));
 
-		User user = userDetailsImpl.getUser();
-
 		if (bindingResult.hasErrors()) {
 			model.addAttribute("restaurant", restaurant);
 			return "reviews/register";
 		}
 
+		User user = userDetailsImpl.getUser();
 		reviewService.create(restaurant, user, reviewRegisterForm);
 		redirectAttributes.addFlashAttribute("successMessage", "レビューを投稿しました。");
 
-		return "redirect:/restaurants/{restaurantId}";
+		return "redirect:/restaurants/" + restaurantId;
 	}
 
 	@GetMapping("/{reviewId}/edit")
@@ -131,15 +131,20 @@ public class ReviewController {
 	}
 
 	@PostMapping("/{reviewId}/delete")
-	public String delete(@PathVariable(name = "restaurantId") Integer restaurantId,
-			@PathVariable(name = "reviewId") Integer reviewId,
+	public String delete(@PathVariable(name = "reviewId") Integer reviewId,
+			@RequestParam(name = "restaurantId") Integer restaurantId,
 			RedirectAttributes redirectAttributes) {
+		// 指定されたレビューが存在するか確認
 		reviewRepository.findById(reviewId)
 				.orElseThrow(() -> new ResourceNotFoundException("指定されたレビューが見つかりませんでした。"));
 
+		// レビューを削除
 		reviewRepository.deleteById(reviewId);
+
+		// 成功メッセージを設定
 		redirectAttributes.addFlashAttribute("successMessage", "レビューを削除しました。");
 
-		return "redirect:/restaurants/{restaurantId}";
+		// レストラン詳細ページにリダイレクト
+		return "redirect:/restaurants/" + restaurantId;
 	}
 }

@@ -24,13 +24,13 @@
                         <h1 class="mb-4 text-center">お気に入り一覧</h1>  
                                         
                         <!-- お気に入りリスト -->
-                        <div class="mb-3" th:each="favorite : ${favoritePage}">
-                            <a th:href="@{/restaurants/__${favorite.restaurant.id}__}" class="link-dark nagoyameshi-card-link">
+                        <div class="mb-3" th:each="favorite : ${favoritePage.content}">
+                            <a th:href="@{/restaurants/{id}(id=${favorite.restaurant.id})}" class="link-dark nagoyameshi-card-link">
                                 <div class="card h-100">
                                     <div class="row g-0">
                                         <div class="col-md-4">
                                             <img th:if="${favorite.restaurant.imageName != null and !#strings.isEmpty(favorite.restaurant.imageName)}"
-                                                 th:src="@{/storage/images/__${favorite.restaurant.imageName}__}"
+                                                 th:src="@{/storage/images/{imageName}(imageName=${favorite.restaurant.imageName})}"
                                                  class="card-img-top nagoyameshi-horizontal-card-image" alt="店舗画像">
                                             <img th:unless="${favorite.restaurant.imageName != null and !#strings.isEmpty(favorite.restaurant.imageName)}"
                                                  th:src="@{/storage/images/noimage.png}"

@@ -4,6 +4,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,6 +36,16 @@ public class RestaurantController {
 		this.restaurantRepository = restaurantRepository;
 		this.reviewRepository = reviewRepository;
 		this.favoriteService = favoriteService;
+	}
+
+	// 飲食店一覧を表示するためのメソッド
+	@GetMapping("/restaurants")
+	public String listRestaurants(Model model,
+			@PageableDefault(size = 10, sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
+		// ページネーション付きで飲食店を取得
+		Page<Restaurant> restaurantPage = restaurantRepository.findAll(pageable);
+		model.addAttribute("restaurantPage", restaurantPage);
+		return "restaurants/index"; // テンプレートのパスを指定
 	}
 
 	@GetMapping("/restaurants/{id}")

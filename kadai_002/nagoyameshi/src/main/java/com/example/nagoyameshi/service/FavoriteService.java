@@ -1,5 +1,7 @@
 package com.example.nagoyameshi.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +18,7 @@ public class FavoriteService {
 		this.favoriteRepository = favoriteRepository;
 	}
 
+	// お気に入りに追加
 	@Transactional
 	public void create(Restaurant restaurant, User user) {
 		if (!isFavorite(restaurant, user)) {
@@ -26,6 +29,7 @@ public class FavoriteService {
 		}
 	}
 
+	// お気に入りから削除
 	@Transactional
 	public void delete(Restaurant restaurant, User user) {
 		Favorite favorite = favoriteRepository.findByRestaurantAndUser(restaurant, user);
@@ -34,7 +38,13 @@ public class FavoriteService {
 		}
 	}
 
+	// お気に入り状態の確認
 	public boolean isFavorite(Restaurant restaurant, User user) {
 		return favoriteRepository.findByRestaurantAndUser(restaurant, user) != null;
+	}
+
+	// ユーザーのお気に入りリストを取得 (ページネーション対応)
+	public Page<Favorite> getUserFavorites(User user, Pageable pageable) {
+		return favoriteRepository.findByUserOrderByCreatedAtDesc(user, pageable);
 	}
 }

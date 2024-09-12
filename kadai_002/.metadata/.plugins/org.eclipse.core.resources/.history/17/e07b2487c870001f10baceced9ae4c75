@@ -1,0 +1,57 @@
+package com.example.nagoyameshi.service;
+
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.nagoyameshi.entity.Favorite;
+import com.example.nagoyameshi.entity.Restaurant;
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.repository.FavoriteRepository;
+
+@Service
+public class FavoriteService {
+    private final FavoriteRepository favoriteRepository;
+
+    public FavoriteService(FavoriteRepository favoriteRepository) {
+        this.favoriteRepository = favoriteRepository;
+    }
+
+    // ページネーション付きでお気に入りを取得
+    public Page<Favorite> getUserFavorites(User user, Pageable pageable) {
+        return favoriteRepository.findByUserOrderByCreatedAtDesc(user, pageable);
+    }
+
+	// お気に入りに追加
+	@Transactional
+	public void create(Restaurant restaurant, User user) {
+		if (!isFavorite(restaurant, user)) {
+			Favorite favorite = new Favorite();
+			favorite.setRestaurant(restaurant);
+			favorite.setUser(user);
+			favoriteRepository.save(favorite);
+		}
+	}
+
+	// お気に入りから削除
+	@Transactional
+	public void delete(Restaurant restaurant, User user) {
+		Favorite favorite = favoriteRepository.findByRestaurantAndUser(restaurant, user);
+		if (favorite != null) {
+			favoriteRepository.delete(favorite);
+		}
+	}
+
+	// お気に入り状態の確認
+	public boolean isFavorite(Restaurant restaurant, User user) {
+		return favoriteRepository.findByRestaurantAndUser(restaurant, user) != null;
+	}
+
+	// ユーザーのお気に入りリストを取得
+	public List<Favorite> getUserFavorites(User user) {
+		return favoriteRepository.findByUser(user);
+	}
+}

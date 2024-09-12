@@ -1,0 +1,281 @@
+/* General Styles */
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background-color: #f5f5dc;
+    margin: 0;
+    padding: 0;
+}
+
+/* ナビゲーションバー */
+.nagoyameshi-navbar {
+    background-color: burlywood;
+}
+
+.nagoyameshi-navbar .navbar-brand {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.nagoyameshi-navbar .navbar-brand img {
+    max-height: 40px;
+    margin-right: 10px;
+}
+
+.nagoyameshi-navbar .navbar-brand:hover {
+    color: #dddddd;
+}
+
+/* フッター */
+footer {
+    background-color: burlywood;
+    color: #ffffff;
+    padding: 10px 0;
+    text-align: center;
+    width: 100%;
+}
+
+/* メインコンテンツ */
+.main-content {
+    padding: 20px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+/* タイトル */
+.main-title {
+    font-size: 2em;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* ボタン */
+.nagoyameshi-btn {
+    background-color: burlywood;
+    border: none;
+}
+
+.nagoyameshi-btn:hover {
+    background-color: burlywood;
+}
+
+/* 削除ボタンのスタイル */
+.samuraitravel-btn-danger {
+    background-color: burlywood;
+    border: none;
+}
+
+.samuraitravel-btn-danger:hover {
+    background-color: #c19a6b;
+    color: #ffffff;
+}
+
+/* テーブル */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #000000;
+    table-layout: fixed;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    vertical-align: top;
+    border-top: 1px solid #000000;
+    word-wrap: break-word;
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #000000;
+}
+
+.table tbody + tbody {
+    border-top: 2px solid #000000;
+}
+
+/* カードのカスタムスタイル */
+.bg-brown {
+    background-color: burlywood;
+}
+
+.bg-light-brown {
+    background-color: #f5f5dc;
+}
+
+.nagoyameshi-wrapper {
+    background-color: #f5f5dc;
+}
+
+.row.align-items-center {
+    display: flex;
+    align-items: center;
+}
+
+.nagoyameshi-dropdown-item:active {
+    background-color: #5196a6;
+}
+
+h2 {
+    font-size: 1.475rem;
+}
+
+h3 {
+    font-size: 1.25rem;
+}
+
+.nagoyameshi-card-link {
+    transition: 0.3s;
+}
+
+.nagoyameshi-card-link:hover {
+    opacity: 0.7;
+}
+
+.nagoyameshi-horizontal-card-image {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+}
+
+.nagoyameshi-sort-box {
+    width: 150px;
+}
+
+.nagoyameshi-vertical-card-image {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.nagoyameshi-search-form {
+    max-width: 300px;
+}
+
+.nagoyameshi-carousel-image {
+    height: 400px;
+    object-fit: cover;
+}
+
+.carousel-caption {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 20px;
+}
+
+.carousel-caption h2 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+.carousel-caption p {
+    font-size: 1.25rem;
+    color: #fff;
+}
+
+/* レビューカードのデザイン */
+.review-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* レビューカードのデザイン */
+.review-card {
+    width: 100%; /* 横幅を全体に広げる */
+    max-width: 600px; /* カードを横長にする */
+    height: auto; /* 縦の自動調整 */
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* レビューセクションの調整 */
+.review-section .row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; /* カードを中央に寄せる */
+    gap: 20px; /* カード間の余白を追加 */
+}
+
+/* レビューセクションの中央寄せと2列表示 */
+.review-section .row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start; /* 左寄せに変更 */
+    gap: 20px; /* カード間の余白を追加 */
+}
+
+/* カード幅の調整 */
+.review-section .col-md-6 {
+    flex: 0 0 100%; /* カードを1列に表示し、横長にする */
+    max-width: 100%; /* カードを横幅いっぱいに広げる */
+    display: flex;
+    justify-content: center;
+}
+
+/* 奇数個のレビューを左寄せに */
+.review-section .col-md-6:nth-child(odd) {
+    margin-right: auto; /* 奇数番目のカードを左に寄せる */
+}
+
+/* 星のデザイン */
+.stars-outer {
+    position: relative;
+    display: inline-block;
+}
+
+.stars-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 0%;
+}
+
+.nagoyameshi-star {
+    font-size: 1.5rem;
+    color: #ffa500;
+}
+
+.nagoyameshi-star:focus {
+    color: #ffa500;
+}
+
+/* スクリーンサイズによって2列に調整 */
+@media (min-width: 768px) {
+    .review-section .col-md-6 {
+        max-width: 48%; /* 中型スクリーンでは48%に広げる */
+    }
+}
+
+@media (min-width: 1200px) {
+    .review-section .col-md-6 {
+        max-width: 40%; /* 大型スクリーンでは40%に広げる */
+    }
+}
+
+.nagoyameshi-btn-danger {
+    background-color: burlywood;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s ease;
+}
+
+.nagoyameshi-btn-danger:hover {
+    background-color: burlywood;
+    color: white;
+}
+
+@media screen and (min-width: 1400px) {
+  .nagoyameshi-container {
+    max-width: 1200px;
+  }
+}

@@ -1,0 +1,21 @@
+package com.example.nagoyameshi.repository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.nagoyameshi.entity.Favorite;
+import com.example.nagoyameshi.entity.Restaurant;
+import com.example.nagoyameshi.entity.User;
+
+public interface FavoriteRepository extends JpaRepository<Favorite, Integer> {
+
+	// 指定したユーザーのお気に入りを作成日時の降順で取得する
+	Page<Favorite> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);
+
+	// 指定したユーザーと飲食店のお気に入り情報を取得する
+	Favorite findByRestaurantAndUser(Restaurant restaurant, User user);
+
+	// 指定したユーザーのすべてのお気に入りを取得する
+	Page<Favorite> findAllByUser(User user, Pageable pageable);
+}
