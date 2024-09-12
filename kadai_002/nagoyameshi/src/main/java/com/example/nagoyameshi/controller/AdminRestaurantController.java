@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired; // Autowiredのインポート
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
@@ -33,10 +34,13 @@ import com.example.nagoyameshi.service.RestaurantService;
 @Controller
 @RequestMapping("/admin/restaurant")
 public class AdminRestaurantController {
+
 	private final RestaurantRepository restaurantRepository;
 	private final RestaurantService restaurantService;
 	private final CategoryRepository categoryRepository;
 
+	// @Autowiredで依存関係を解決
+	@Autowired
 	public AdminRestaurantController(RestaurantRepository restaurantRepository,
 			RestaurantService restaurantService,
 			CategoryRepository categoryRepository) {

@@ -8,7 +8,6 @@ import java.nio.file.StandardCopyOption;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,9 +28,8 @@ public class RestaurantService {
 	private final RestaurantRepository restaurantRepository;
 	private final CategoryRepository categoryRepository;
 
-	// 画像保存先のパスをapplication.propertiesから取得
-	@Value("${app.image.storage.path}")
-	private String imageStoragePath;
+	// ローカルで画像を保存するディレクトリを設定（固定のパス）
+	private final String imageStoragePath = "src/main/resources/static/storage/images";
 
 	public RestaurantService(RestaurantRepository restaurantRepository, CategoryRepository categoryRepository) {
 		this.restaurantRepository = restaurantRepository;
@@ -48,11 +46,11 @@ public class RestaurantService {
 		Category category = categoryRepository.findById(restaurantRegisterForm.getCategoryId())
 				.orElseThrow(() -> new IllegalArgumentException("Invalid category Id"));
 
-		// 画像の処理
+		// 画像の処理（ローカルパスを使用）
 		if (!imageFile.isEmpty()) {
 			String imageName = imageFile.getOriginalFilename();
 			String hashedImageName = generateNewFileName(imageName);
-			Path filePath = Paths.get(imageStoragePath, hashedImageName); // 設定されたパスを使用
+			Path filePath = Paths.get(imageStoragePath, hashedImageName); // ローカルパスを使用
 			copyImageFile(imageFile, filePath);
 			restaurant.setImageName(hashedImageName);
 		}
@@ -83,11 +81,11 @@ public class RestaurantService {
 		Category category = categoryRepository.findById(restaurantEditForm.getCategoryId())
 				.orElseThrow(() -> new IllegalArgumentException("Invalid category Id"));
 
-		// 画像の処理
+		// 画像の処理（ローカルパスを使用）
 		if (!imageFile.isEmpty()) {
 			String imageName = imageFile.getOriginalFilename();
 			String hashedImageName = generateNewFileName(imageName);
-			Path filePath = Paths.get(imageStoragePath, hashedImageName); // 設定されたパスを使用
+			Path filePath = Paths.get(imageStoragePath, hashedImageName); // ローカルパスを使用
 			copyImageFile(imageFile, filePath);
 			restaurant.setImageName(hashedImageName);
 		}

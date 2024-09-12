@@ -5467,3 +5467,30 @@ org.eclipse.core.runtime.CoreException: Could not resolve artifact com.mysql:mys
 2024-09-12 17:51:35,768 [Worker-72: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 0 resource from src\main\resources to target\classes
 2024-09-12 17:51:35,777 [Worker-72: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 1 resource from src\main\resources to target\classes
 2024-09-12 17:51:35,780 [Worker-72: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - skip non existing resourceDirectory C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\nagoyameshi\src\test\resources
+2024-09-12 17:52:01,420 [Worker-74: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 0 resource from src\main\resources to target\classes
+2024-09-12 17:52:01,428 [Worker-74: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 1 resource from src\main\resources to target\classes
+2024-09-12 17:52:01,430 [Worker-74: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - skip non existing resourceDirectory C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\nagoyameshi\src\test\resources
+2024-09-12 17:52:11,441 [Worker-74: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 0 resource from src\main\resources to target\classes
+2024-09-12 17:52:11,450 [Worker-74: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 1 resource from src\main\resources to target\classes
+2024-09-12 17:52:11,453 [Worker-74: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - skip non existing resourceDirectory C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\nagoyameshi\src\test\resources
+2024-09-12 17:52:18,388 [Worker-72: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 0 resource from src\main\resources to target\classes
+2024-09-12 17:52:18,397 [Worker-72: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 1 resource from src\main\resources to target\classes
+2024-09-12 17:52:18,400 [Worker-72: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - skip non existing resourceDirectory C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\nagoyameshi\src\test\resources
+2024-09-12 19:32:40,941 [Worker-88: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 1 resource from src\main\resources to target\classes
+2024-09-12 19:32:40,955 [Worker-88: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 0 resource from src\main\resources to target\classes
+2024-09-12 19:32:40,959 [Worker-88: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - skip non existing resourceDirectory C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\nagoyameshi\src\test\resources
+2024-09-12 19:39:38,649 [Worker-97: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 2 resources from src\main\resources to target\classes
+2024-09-12 19:39:38,687 [Worker-97: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 47 resources from src\main\resources to target\classes
+2024-09-12 19:39:38,704 [Worker-97: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - skip non existing resourceDirectory C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\nagoyameshi\src\test\resources
+2024-09-12 19:45:37,224 [Worker-106: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 2 resources from src\main\resources to target\classes
+2024-09-12 19:45:37,235 [Worker-106: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 47 resources from src\main\resources to target\classes
+2024-09-12 19:45:37,251 [Worker-106: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - skip non existing resourceDirectory C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\nagoyameshi\src\test\resources
+2024-09-12 20:15:05,520 [Worker-109: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 2 resources from src\main\resources to target\classes
+2024-09-12 20:15:05,540 [Worker-109: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 47 resources from src\main\resources to target\classes
+2024-09-12 20:15:05,556 [Worker-109: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - skip non existing resourceDirectory C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\nagoyameshi\src\test\resources
+2024-09-12 21:18:19,846 [Worker-114: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 2 resources from src\main\resources to target\classes
+2024-09-12 21:18:19,857 [Worker-114: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 47 resources from src\main\resources to target\classes
+2024-09-12 21:18:19,874 [Worker-114: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - skip non existing resourceDirectory C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\nagoyameshi\src\test\resources
+2024-09-12 21:19:02,457 [Worker-117: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 2 resources from src\main\resources to target\classes
+2024-09-12 21:19:02,466 [Worker-117: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - Copying 47 resources from src\main\resources to target\classes
+2024-09-12 21:19:02,481 [Worker-117: ビルド] INFO  o.a.m.s.f.DefaultMavenResourcesFiltering - skip non existing resourceDirectory C:\Users\のり\OneDrive\デスクトップ\kadai_002\kadai_002\nagoyameshi\src\test\resources
