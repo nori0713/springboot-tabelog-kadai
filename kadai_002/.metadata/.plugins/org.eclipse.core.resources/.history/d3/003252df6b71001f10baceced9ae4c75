@@ -104,7 +104,7 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Integer>
 
 	// カテゴリIDでレストランを検索するメソッドを定義
 	Page<Restaurant> findByCategoryId(Integer categoryId, Pageable pageable);
-
+	
 	// カテゴリでレストランを作成日時の降順で検索するメソッド
 	Page<Restaurant> findByCategoryOrderByCreatedAtDesc(Category category, Pageable pageable);
 }
