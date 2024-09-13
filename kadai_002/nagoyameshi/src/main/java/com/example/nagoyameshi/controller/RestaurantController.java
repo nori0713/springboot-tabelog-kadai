@@ -13,12 +13,15 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.nagoyameshi.entity.Category;
 import com.example.nagoyameshi.entity.Restaurant;
 import com.example.nagoyameshi.entity.Review;
 import com.example.nagoyameshi.entity.User;
 import com.example.nagoyameshi.form.ReservationInputForm;
+import com.example.nagoyameshi.repository.CategoryRepository;
 import com.example.nagoyameshi.repository.RestaurantRepository;
 import com.example.nagoyameshi.repository.ReviewRepository;
 import com.example.nagoyameshi.security.UserDetailsImpl;
@@ -30,20 +33,68 @@ public class RestaurantController {
 	private final RestaurantRepository restaurantRepository;
 	private final ReviewRepository reviewRepository;
 	private final FavoriteService favoriteService;
+	private final CategoryRepository categoryRepository; // CategoryRepositoryを追加
 
-	public RestaurantController(RestaurantRepository restaurantRepository, ReviewRepository reviewRepository,
-			FavoriteService favoriteService) {
+	public RestaurantController(RestaurantRepository restaurantRepository,
+			ReviewRepository reviewRepository,
+			FavoriteService favoriteService,
+			CategoryRepository categoryRepository) {
 		this.restaurantRepository = restaurantRepository;
 		this.reviewRepository = reviewRepository;
 		this.favoriteService = favoriteService;
+		this.categoryRepository = categoryRepository;
 	}
 
 	// 飲食店一覧を表示するためのメソッド
 	@GetMapping("/restaurants")
-	public String listRestaurants(Model model,
+	public String listRestaurants(@RequestParam(name = "category", required = false) Integer categoryId,
+			@RequestParam(name = "price", required = false) Integer price,
+			@RequestParam(name = "capacity", required = false) Integer capacity, // 予約人数パラメータを追加
+			Model model,
 			@PageableDefault(size = 10, sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
+		// カテゴリデータを取得してモデルに追加
+		List<Category> categories = categoryRepository.findAll();
+		model.addAttribute("categories", categories);
+		model.addAttribute("categoryId", categoryId);
+		model.addAttribute("price", price); // 価格帯パラメータをモデルに追加
+		model.addAttribute("capacity", capacity); // 予約人数パラメータをモデルに追加
+
 		// ページネーション付きで飲食店を取得
-		Page<Restaurant> restaurantPage = restaurantRepository.findAll(pageable);
+		Page<Restaurant> restaurantPage;
+
+		// カテゴリ、価格、人数の検索条件をチェックして対応する検索ロジックを適用
+		if (categoryId != null && categoryId > 0) {
+			if (price != null && capacity != null) {
+				// カテゴリ + 価格帯 + 予約人数でフィルタリング
+				restaurantPage = restaurantRepository.findByCategoryIdAndPriceLessThanEqualAndCapacityGreaterThanEqual(
+						categoryId, price, capacity, pageable);
+			} else if (price != null) {
+				// カテゴリ + 価格帯でフィルタリング
+				restaurantPage = restaurantRepository.findByCategoryIdAndPriceLessThanEqual(categoryId, price,
+						pageable);
+			} else if (capacity != null) {
+				// カテゴリ + 予約人数でフィルタリング
+				restaurantPage = restaurantRepository.findByCategoryIdAndCapacityGreaterThanEqual(categoryId, capacity,
+						pageable);
+			} else {
+				// カテゴリでフィルタリング
+				restaurantPage = restaurantRepository.findByCategoryId(categoryId, pageable);
+			}
+		} else if (price != null && capacity != null) {
+			// 価格帯 + 予約人数でフィルタリング
+			restaurantPage = restaurantRepository.findByPriceLessThanEqualAndCapacityGreaterThanEqual(price, capacity,
+					pageable);
+		} else if (price != null) {
+			// 価格帯でフィルタリング
+			restaurantPage = restaurantRepository.findByPriceLessThanEqual(price, pageable);
+		} else if (capacity != null) {
+			// 予約人数でフィルタリング
+			restaurantPage = restaurantRepository.findByCapacityGreaterThanEqual(capacity, pageable);
+		} else {
+			// すべてのレストランを取得
+			restaurantPage = restaurantRepository.findAll(pageable);
+		}
+
 		model.addAttribute("restaurantPage", restaurantPage);
 		return "restaurants/index"; // テンプレートのパスを指定
 	}

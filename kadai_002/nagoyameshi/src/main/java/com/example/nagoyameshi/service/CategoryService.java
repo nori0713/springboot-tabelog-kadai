@@ -24,6 +24,17 @@ public class CategoryService {
 		categoryRepository.save(category); // 新しいカテゴリを保存
 	}
 
+	// カテゴリを更新するメソッド
+	public void update(Integer id, CategoryForm categoryForm) {
+		Category category = categoryRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("カテゴリが見つかりませんでした。ID: " + id));
+
+		// カテゴリ名を更新
+		category.setName(categoryForm.getName());
+
+		categoryRepository.save(category); // 更新したカテゴリを保存
+	}
+
 	// カテゴリを削除するメソッド
 	public void delete(Integer id) {
 		try {

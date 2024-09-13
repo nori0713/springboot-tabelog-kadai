@@ -63,6 +63,47 @@ public class AdminCategoryController {
 		return "redirect:/admin/categories";
 	}
 
+	// カテゴリ編集フォーム表示
+	@GetMapping("/admin/categories/{id}/edit")
+	public String showEditForm(@PathVariable Integer id, Model model) {
+		Category category = categoryRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("カテゴリが見つかりませんでした。ID: " + id));
+
+		CategoryForm categoryForm = new CategoryForm();
+		categoryForm.setName(category.getName());
+
+		model.addAttribute("category", category);
+		model.addAttribute("categoryForm", categoryForm);
+
+		return "admin/categories/edit";
+	}
+
+	// カテゴリ更新処理
+	@PostMapping("/admin/categories/{id}/edit")
+	public String update(@PathVariable Integer id,
+			@ModelAttribute @Validated CategoryForm categoryForm,
+			BindingResult bindingResult,
+			Model model,
+			RedirectAttributes redirectAttributes) {
+
+		if (bindingResult.hasErrors()) {
+			// エラー時にフォームデータを保持して再表示
+			model.addAttribute("categoryForm", categoryForm);
+			return "admin/categories/edit";
+		}
+
+		try {
+			categoryService.update(id, categoryForm);
+			redirectAttributes.addFlashAttribute("successMessage", "カテゴリを更新しました。");
+		} catch (Exception e) {
+			// エラーメッセージをリダイレクト後のビューに渡す
+			redirectAttributes.addFlashAttribute("errorMessage", "カテゴリの更新に失敗しました: " + e.getMessage());
+			return "redirect:/admin/categories/" + id + "/edit";
+		}
+
+		return "redirect:/admin/categories";
+	}
+
 	// カテゴリ削除
 	@PostMapping("/admin/categories/{id}/delete")
 	public String delete(@PathVariable Integer id, RedirectAttributes redirectAttributes) {

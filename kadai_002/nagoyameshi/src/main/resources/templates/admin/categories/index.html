@@ -44,6 +44,9 @@
                                         <td th:text="${category.id}"></td>
                                         <td th:text="${category.name}"></td>
                                         <td>
+                                            <!-- 編集リンク -->
+                                            <a th:href="@{/admin/categories/{id}/edit(id=${category.id})}" class="nagoyameshi-link-info">編集</a> |
+                                            <!-- 削除リンク -->
                                             <a href="#" class="nagoyameshi-link-danger" data-bs-toggle="modal" th:data-bs-target="${'#deleteCategoryModal' + category.id}">削除</a>
                                             
                                             <!-- 削除モーダル -->

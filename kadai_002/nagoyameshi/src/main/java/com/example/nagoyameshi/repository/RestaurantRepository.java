@@ -13,77 +13,95 @@ import com.example.nagoyameshi.entity.Restaurant;
 @Repository
 public interface RestaurantRepository extends JpaRepository<Restaurant, Integer> {
 
-	// 名前のみを使ってキーワード検索を行うメソッド
+	// 名前による検索
 	Page<Restaurant> findByNameLike(String keyword, Pageable pageable);
 
-	// キーワード検索に基づくメソッド
+	// 名前または住所によるキーワード検索
 	Page<Restaurant> findByNameLikeOrAddressLikeOrderByCreatedAtDesc(String nameKeyword, String addressKeyword,
 			Pageable pageable);
 
 	Page<Restaurant> findByNameLikeOrAddressLikeOrderByPriceAsc(String nameKeyword, String addressKeyword,
 			Pageable pageable);
 
-	// 価格範囲検索に基づくメソッド
+	// 価格帯検索
 	Page<Restaurant> findByPriceLessThanEqualOrderByCreatedAtDesc(Integer price, Pageable pageable);
 
 	Page<Restaurant> findByPriceLessThanEqualOrderByPriceAsc(Integer price, Pageable pageable);
 
-	// 価格が指定値以上のレストランを検索するメソッド
+	// 価格が指定値以上のレストランを検索
 	Page<Restaurant> findByPriceGreaterThanEqualOrderByCreatedAtDesc(Integer price, Pageable pageable);
 
 	Page<Restaurant> findByPriceGreaterThanEqualOrderByPriceAsc(Integer price, Pageable pageable);
 
-	// 価格が指定した範囲内のレストランを検索するメソッド
+	// 価格が指定した範囲内のレストランを検索
 	Page<Restaurant> findByPriceBetweenOrderByCreatedAtDesc(Integer minPrice, Integer maxPrice, Pageable pageable);
 
 	Page<Restaurant> findByPriceBetweenOrderByPriceAsc(Integer minPrice, Integer maxPrice, Pageable pageable);
 
-	// 全件を並び替えで取得するメソッド
+	// 全件取得を作成日時または価格で並び替え
 	Page<Restaurant> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
 	Page<Restaurant> findAllByOrderByPriceAsc(Pageable pageable);
 
-	// 新しいレストランを上位10件取得するメソッド
-	List<Restaurant> findTop10ByOrderByCreatedAtDesc();
-
-	// 予約最大人数に基づく検索・ソートメソッド
+	// 予約最大人数による検索
 	Page<Restaurant> findByCapacityGreaterThanEqualOrderByCreatedAtDesc(Integer capacity, Pageable pageable);
 
+	Page<Restaurant> findByCapacityGreaterThanEqualOrderByPriceAsc(Integer capacity, Pageable pageable);
+
 	Page<Restaurant> findByCapacityLessThanEqualOrderByCreatedAtDesc(Integer capacity, Pageable pageable);
+
+	Page<Restaurant> findByCapacityLessThanEqualOrderByPriceAsc(Integer capacity, Pageable pageable);
 
 	Page<Restaurant> findByCapacityBetweenOrderByCreatedAtDesc(Integer minCapacity, Integer maxCapacity,
 			Pageable pageable);
 
-	Page<Restaurant> findByCapacityGreaterThanEqualOrderByPriceAsc(Integer capacity, Pageable pageable);
-
-	Page<Restaurant> findByCapacityLessThanEqualOrderByPriceAsc(Integer capacity, Pageable pageable);
-
 	Page<Restaurant> findByCapacityBetweenOrderByPriceAsc(Integer minCapacity, Integer maxCapacity, Pageable pageable);
 
-	// カテゴリ検索メソッドの追加（カテゴリはCategoryエンティティに変更）
-	// カテゴリIDでレストランを検索し、価格の昇順で並び替えるメソッド
+	// カテゴリによる検索（価格で並び替え、作成日時で並び替え）
 	Page<Restaurant> findByCategory_IdOrderByPriceAsc(Integer categoryId, Pageable pageable);
 
-	// カテゴリIDでレストランを検索し、作成日時の降順で並び替えるメソッド
 	Page<Restaurant> findByCategory_IdOrderByCreatedAtDesc(Integer categoryId, Pageable pageable);
 
-	// カテゴリでレストランを検索し、価格の昇順で並び替えるメソッド
-	Page<Restaurant> findByCategoryOrderByPriceAsc(Category category, Pageable pageable);
-
-	// カテゴリでレストランを検索し、作成日時の降順で並び替えるメソッド
-	Page<Restaurant> findByCategoryOrderByCreatedAtDesc(Category category, Pageable pageable);
-
-	// カテゴリと価格の範囲で検索
+	// カテゴリと価格範囲で検索
 	Page<Restaurant> findByCategoryAndPriceBetweenOrderByCreatedAtDesc(Category category, Integer minPrice,
 			Integer maxPrice, Pageable pageable);
 
 	Page<Restaurant> findByCategoryAndPriceBetweenOrderByPriceAsc(Category category, Integer minPrice, Integer maxPrice,
 			Pageable pageable);
 
-	// カテゴリと最大人数で検索
+	// カテゴリと最大人数による検索
 	Page<Restaurant> findByCategoryAndCapacityBetweenOrderByCreatedAtDesc(Category category, Integer minCapacity,
 			Integer maxCapacity, Pageable pageable);
 
 	Page<Restaurant> findByCategoryAndCapacityBetweenOrderByPriceAsc(Category category, Integer minCapacity,
 			Integer maxCapacity, Pageable pageable);
+
+	// カテゴリ、価格帯、予約人数の複合検索
+	Page<Restaurant> findByCategoryIdAndPriceLessThanEqualAndCapacityGreaterThanEqual(Integer categoryId, Integer price,
+			Integer capacity, Pageable pageable);
+
+	Page<Restaurant> findByCategoryIdAndCapacityGreaterThanEqual(Integer categoryId, Integer capacity,
+			Pageable pageable);
+
+	// 特定の条件でトップ10のレストランを取得
+	List<Restaurant> findTop10ByOrderByCreatedAtDesc();
+
+	// カテゴリID + 価格帯検索
+	Page<Restaurant> findByCategoryIdAndPriceLessThanEqual(Integer categoryId, Integer price, Pageable pageable);
+
+	// 価格帯 + 予約人数検索
+	Page<Restaurant> findByPriceLessThanEqualAndCapacityGreaterThanEqual(Integer price, Integer capacity,
+			Pageable pageable);
+
+	// 価格帯のみの検索
+	Page<Restaurant> findByPriceLessThanEqual(Integer price, Pageable pageable);
+
+	// 予約人数のみの検索
+	Page<Restaurant> findByCapacityGreaterThanEqual(Integer capacity, Pageable pageable);
+
+	// 全てのレストランを取得
+	Page<Restaurant> findAll(Pageable pageable);
+
+	// カテゴリIDでレストランを検索するメソッドを定義
+	Page<Restaurant> findByCategoryId(Integer categoryId, Pageable pageable);
 }

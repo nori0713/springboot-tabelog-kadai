@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <div th:replace="~{fragment :: meta}"></div>
+    <div th:replace="~{fragment :: styles}"></div>
+    <title>カテゴリ編集</title>
+</head>
+<body>
+    <div class="nagoyameshi-wrapper">
+        <!-- ヘッダー -->
+        <header th:replace="~{fragment :: header}"></header>
+        
+        <main>
+            <div class="container pt-4 pb-5 nagoyameshi-container">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <h1 class="mb-4 text-center">カテゴリ編集</h1>
+                        
+                        <!-- フォーム開始 -->
+                        <form method="post" 
+                              th:if="${category != null}" 
+                              th:action="@{/admin/categories/{id}/edit(id=${category.id})}" 
+                              th:object="${categoryForm}">
+                            
+                            <!-- カテゴリ名 -->
+                            <div class="form-group mb-3">
+                                <label for="name" class="form-label fw-bold">カテゴリ名</label>
+                                <div th:if="${#fields.hasErrors('name')}" class="text-danger small mb-2" th:errors="*{name}"></div>
+                                <input type="text" id="name" class="form-control" th:field="*{name}" placeholder="カテゴリ名を入力してください">
+                            </div>
+
+                            <!-- 更新ボタン -->
+                            <div class="d-flex justify-content-center">
+                                <button type="submit" class="btn text-white shadow-sm w-50 nagoyameshi-btn">更新</button>
+                            </div>
+                        </form>
+
+                        <!-- カテゴリがnullの場合のエラーメッセージ -->
+                        <div th:if="${category == null}" class="alert alert-danger">
+                            カテゴリが見つかりません。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- フッター -->
+        <footer th:replace="~{fragment :: footer}"></footer>
+    </div>
+    
+    <!-- Bootstrap -->
+    <div th:replace="~{fragment :: scripts}"></div>
+</body>
+</html>
