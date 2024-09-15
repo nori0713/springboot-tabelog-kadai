@@ -106,7 +106,7 @@
 							            <span class="fw-bold">カード番号</span>
 							        </div>
 							        <div class="col">
-							            <span th:text="${cardDetails['number']}">**** **** **** 1234</span>
+							            <span th:text="${cardDetails['number']}"></span>
 							        </div>
 							    </div>
 							    <div class="row pb-2 mb-2 border-bottom">
@@ -114,24 +114,11 @@
 							            <span class="fw-bold">有効期限</span>
 							        </div>
 							        <div class="col">
-							            <span th:text="${cardDetails['expiry']}">12/24</span>
+							            <span th:text="${cardDetails['expiry']}"></span>
 							        </div>
 							    </div>
-							</div>
-							
-							<!-- クレジットカード情報が存在しない場合のエラーメッセージ -->
-							<div th:if="${cardDetails == null}">
-							    <div class="alert alert-danger" role="alert">
-							        クレジットカード情報が見つかりませんでした。
-							    </div>
-							</div>
-							
-							<!-- その他のエラーメッセージ -->
-							<div th:if="${errorMessage != null}">
-							    <div class="alert alert-danger" role="alert">
-							        <span th:text="${errorMessage}"></span>
-							    </div>
-							</div>                                                                                                                         
+							</div>                        
+                        </div>                                                                                                                           
                     </div>
                 </div>
             </div>

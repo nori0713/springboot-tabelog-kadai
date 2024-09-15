@@ -116,18 +116,12 @@ public class UserController {
 		// 有料会員の場合、Stripeからクレジットカード情報を取得して表示する
 		if (user.isPremiumMember()) {
 			try {
-				logger.info("Retrieving card details for customer: {}", user.getStripeCustomerId());
 				// Stripeからカード情報を取得する
 				Map<String, String> cardDetails = stripeService.getCreditCardInfo(user.getStripeCustomerId());
-				if (cardDetails == null || cardDetails.isEmpty()) {
-					logger.warn("No card details found for customer: {}", user.getStripeCustomerId());
-					model.addAttribute("errorMessage", "クレジットカード情報が見つかりませんでした。");
-				} else {
-					logger.info("Card Details: {}", cardDetails); // ログ出力
-					model.addAttribute("cardDetails", cardDetails);
-				}
+				logger.info("Card Details: {}", cardDetails); // ログ出力
+				model.addAttribute("cardDetails", cardDetails);
 			} catch (Exception e) {
-				logger.error("Error retrieving card details for customer: {}", user.getStripeCustomerId(), e);
+				logger.error("クレジットカード情報の取得に失敗しました。", e);
 				model.addAttribute("errorMessage", "クレジットカード情報の取得に失敗しました。");
 			}
 		}
