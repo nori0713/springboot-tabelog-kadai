@@ -1,0 +1,105 @@
+package com.example.nagoyameshi.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.form.UserEditForm;
+import com.example.nagoyameshi.repository.UserRepository;
+import com.example.nagoyameshi.security.UserDetailsImpl;
+import com.example.nagoyameshi.service.StripeService; // StripeServiceをインポート
+import com.example.nagoyameshi.service.UserService;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@Controller
+@RequestMapping("/user")
+public class UserController {
+	private final UserRepository userRepository;
+	private final UserService userService;
+	private final StripeService stripeService; // StripeServiceの依存性注入
+
+	@Autowired
+	public UserController(UserRepository userRepository, UserService userService, StripeService stripeService) {
+		this.userRepository = userRepository;
+		this.userService = userService;
+		this.stripeService = stripeService; // StripeServiceの初期化
+	}
+
+	@GetMapping
+	public String index(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model) {
+		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
+		model.addAttribute("user", user);
+		return "user/index";
+	}
+
+	@GetMapping("/edit")
+	public String edit(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model) {
+		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
+		UserEditForm userEditForm = new UserEditForm(user.getId(), user.getName(), user.getFurigana(),
+				user.getPostalCode(), user.getAddress(), user.getPhoneNumber(), user.getEmail());
+
+		model.addAttribute("userEditForm", userEditForm);
+		return "user/edit";
+	}
+
+	@PostMapping("/update")
+	public String update(@ModelAttribute @Validated UserEditForm userEditForm, BindingResult bindingResult,
+			RedirectAttributes redirectAttributes) {
+		// メールアドレスが変更されており、且つ登録済みであれば、BindingResultオブジェクトにエラー内容を追加する
+		if (userService.isEmailChanged(userEditForm) && userService.isEmailRegistered(userEditForm.getEmail())) {
+			FieldError fieldError = new FieldError(bindingResult.getObjectName(), "email", "すでに登録済みのメールアドレスです。");
+			bindingResult.addError(fieldError);
+		}
+
+		if (bindingResult.hasErrors()) {
+			return "user/edit";
+		}
+
+		userService.update(userEditForm);
+		redirectAttributes.addFlashAttribute("successMessage", "会員情報を編集しました。");
+		return "redirect:/user";
+	}
+
+	// 有料会員へのアップグレード処理
+	@PostMapping("/subscribe")
+	public String subscribeToPremium(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+			HttpServletRequest request) {
+		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
+		String checkoutUrl = stripeService.createSubscriptionSession(request, user.getEmail());
+		return "redirect:" + checkoutUrl; // Stripe Checkoutにリダイレクト
+	}
+
+	@PostMapping("/user/update-card")
+	public String updateCreditCard(@RequestParam("cardNumber") String cardNumber,
+			@RequestParam("expMonth") String expMonth,
+			@RequestParam("expYear") String expYear,
+			@RequestParam("cvc") String cvc,
+			@RequestParam("userId") Integer userId,
+			RedirectAttributes redirectAttributes) {
+		try {
+			// Stripe API経由でトークンを作成
+			String paymentMethodId = stripeService.createPaymentMethod(cardNumber, expMonth, expYear, cvc);
+
+			// クレジットカード情報の更新
+			userService.updateCreditCard(userId, paymentMethodId);
+
+			redirectAttributes.addFlashAttribute("successMessage", "クレジットカード情報が更新されました。");
+			return "redirect:/profile"; // プロフィールページにリダイレクト
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("errorMessage", "カード情報の更新に失敗しました。");
+			return "redirect:/user/update-card"; // 更新ページにリダイレクト
+		}
+	}
+}

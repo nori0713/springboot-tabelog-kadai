@@ -52,6 +52,15 @@ public class User {
 	@Column(name = "subscription_status")
 	private String subscriptionStatus; // サブスクリプションの状態
 
+	@Column(name = "reset_token")
+	private String resetToken; // パスワードリセット用のトークン
+
+	@Column(name = "reset_token_expiration")
+	private Timestamp resetTokenExpiration; // トークンの有効期限
+
+	@Column(name = "stripe_customer_id") // Stripeの顧客IDを追加
+	private String stripeCustomerId;
+
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private Timestamp createdAt;
 
@@ -63,7 +72,7 @@ public class User {
 		return this.subscriptionStatus;
 	}
 
-	// 必要に応じてサブスクリプションステータスのセッターも追加できます
+	// サブスクリプションステータスのセッター
 	public void setSubscriptionStatus(String subscriptionStatus) {
 		this.subscriptionStatus = subscriptionStatus;
 	}
@@ -71,5 +80,31 @@ public class User {
 	// 有料会員かどうかを判定するヘルパーメソッド
 	public boolean isPremiumMember() {
 		return "ROLE_PREMIUM".equals(this.role.getName());
+	}
+
+	// リセットトークン関連のゲッター・セッター
+	public String getResetToken() {
+		return resetToken;
+	}
+
+	public void setResetToken(String resetToken) {
+		this.resetToken = resetToken;
+	}
+
+	public Timestamp getResetTokenExpiration() {
+		return resetTokenExpiration;
+	}
+
+	public void setResetTokenExpiration(Timestamp resetTokenExpiration) {
+		this.resetTokenExpiration = resetTokenExpiration;
+	}
+
+	// Stripe 顧客ID関連のゲッター・セッター
+	public String getStripeCustomerId() {
+		return stripeCustomerId;
+	}
+
+	public void setStripeCustomerId(String stripeCustomerId) {
+		this.stripeCustomerId = stripeCustomerId;
 	}
 }

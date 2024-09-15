@@ -1,5 +1,9 @@
 package com.example.nagoyameshi.controller;
 
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -10,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -17,7 +22,7 @@ import com.example.nagoyameshi.entity.User;
 import com.example.nagoyameshi.form.UserEditForm;
 import com.example.nagoyameshi.repository.UserRepository;
 import com.example.nagoyameshi.security.UserDetailsImpl;
-import com.example.nagoyameshi.service.StripeService; // StripeServiceをインポート
+import com.example.nagoyameshi.service.StripeService;
 import com.example.nagoyameshi.service.UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,13 +32,13 @@ import jakarta.servlet.http.HttpServletRequest;
 public class UserController {
 	private final UserRepository userRepository;
 	private final UserService userService;
-	private final StripeService stripeService; // StripeServiceの依存性注入
+	private final StripeService stripeService;
 
 	@Autowired
 	public UserController(UserRepository userRepository, UserService userService, StripeService stripeService) {
 		this.userRepository = userRepository;
 		this.userService = userService;
-		this.stripeService = stripeService; // StripeServiceの初期化
+		this.stripeService = stripeService;
 	}
 
 	@GetMapping
@@ -56,7 +61,6 @@ public class UserController {
 	@PostMapping("/update")
 	public String update(@ModelAttribute @Validated UserEditForm userEditForm, BindingResult bindingResult,
 			RedirectAttributes redirectAttributes) {
-		// メールアドレスが変更されており、且つ登録済みであれば、BindingResultオブジェクトにエラー内容を追加する
 		if (userService.isEmailChanged(userEditForm) && userService.isEmailRegistered(userEditForm.getEmail())) {
 			FieldError fieldError = new FieldError(bindingResult.getObjectName(), "email", "すでに登録済みのメールアドレスです。");
 			bindingResult.addError(fieldError);
@@ -71,12 +75,58 @@ public class UserController {
 		return "redirect:/user";
 	}
 
-	// 有料会員へのアップグレード処理
 	@PostMapping("/subscribe")
 	public String subscribeToPremium(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
 			HttpServletRequest request) {
 		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
 		String checkoutUrl = stripeService.createSubscriptionSession(request, user.getEmail());
-		return "redirect:" + checkoutUrl; // Stripe Checkoutにリダイレクト
+		return "redirect:" + checkoutUrl;
 	}
+
+	@GetMapping("/update-card")
+	public String showUpdateCardForm(Model model) {
+		return "user/update-card"; // クレジットカード情報の更新フォームページ
+	}
+
+	@PostMapping("/update-card")
+	public String updateCreditCard(@RequestBody Map<String, String> payload,
+			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+			RedirectAttributes redirectAttributes) {
+		try {
+			String paymentMethodId = payload.get("paymentMethodId");
+			User user = userDetailsImpl.getUser();
+
+			// クレジットカード情報の更新
+			userService.updateCreditCard(user.getId(), paymentMethodId);
+
+			redirectAttributes.addFlashAttribute("successMessage", "クレジットカード情報が更新されました。");
+			return "redirect:/user";
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("errorMessage", "カード情報の更新に失敗しました。");
+			return "redirect:/user/update-card";
+		}
+	}
+
+	private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+
+	@GetMapping("/user")
+	public String getUserDetails(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model) {
+		User user = userDetailsImpl.getUser();
+		model.addAttribute("user", user);
+
+		// 有料会員の場合、Stripeからクレジットカード情報を取得して表示する
+		if (user.isPremiumMember()) {
+			try {
+				// Stripeからカード情報を取得する
+				Map<String, String> cardDetails = stripeService.getCreditCardInfo(user.getStripeCustomerId());
+				logger.info("Card Details: {}", cardDetails); // ログ出力
+				model.addAttribute("cardDetails", cardDetails);
+			} catch (Exception e) {
+				logger.error("クレジットカード情報の取得に失敗しました。", e);
+				model.addAttribute("errorMessage", "クレジットカード情報の取得に失敗しました。");
+			}
+		}
+		return "user/index";
+	}
+
 }

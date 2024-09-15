@@ -35,9 +35,26 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 COMMIT;
 
+-- Stripe顧客情報カラム追加
+--ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR(255);
+
+-- プレミアム会員のStripe顧客IDを設定
+UPDATE users 
+SET stripe_customer_id = 'cus_premium_member_12345' 
+WHERE email = 'premium@example.com';
+
+--トークン有効期限カラムの追加
+--ALTER TABLE verification_tokens
+--ADD COLUMN expiration_date TIMESTAMP NOT NULL;
+
+--パスワードリセット用トークンのカラムを追加
+--ALTER TABLE users
+--ADD COLUMN reset_token VARCHAR(255),
+--ADD COLUMN reset_token_expiration TIMESTAMP;
+
 -- カラム追加 --
 -- ALTER TABLE users
--- ADD COLUMN subscription_status VARCHAR(50) NOT NULL DEFAULT 'INACTIVE';
+--ADD COLUMN subscription_status VARCHAR(50) NOT NULL DEFAULT 'INACTIVE';
 
 -- 営業時間カラムの追加
 --ALTER TABLE restaurants
@@ -58,21 +75,21 @@ INSERT IGNORE INTO categories (id, name) VALUES
 (6, 'ベジタリアン'),
 (7, 'デザート');
 
--- 飲食店データ (営業時間付き)
-INSERT IGNORE INTO restaurants (id, name, image_name, description, price, postal_code, address, phone_number, category_id, capacity, opening_time, closing_time, created_at, updated_at)
-VALUES 
-(1, '寿司屋', '001.jpg', '町で一番の寿司', 3000, '123-4567', '名古屋市寿司町123', '052-123-4567', 1, 50, '11:00:00', '22:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(2, 'ラーメンハウス', '002.jpg', '美味しいラーメンとサイドメニュー', 1200, '123-4567', '名古屋市ラーメン通り456', '052-123-4568', 1, 30, '10:00:00', '21:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(3, 'ピザワールド', '003.jpg', '本格的なイタリアンピザ', 2500, '123-4567', '名古屋市ピザ大通り789', '052-123-4569', 2, 40, '12:00:00', '23:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(4, 'バーガータウン', '004.jpg', 'ジューシーなバーガーとフライドポテト', 1500, '123-4567', '名古屋市バーガー通り321', '052-123-4570', 3, 35, '09:00:00', '20:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(5, 'カレーハウス', '005.jpg', 'スパイシーで風味豊かなカレー', 1800, '123-4567', '名古屋市カレー通り654', '052-123-4571', 4, 25, '11:30:00', '22:30:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(6, 'BBQヘブン', '006.jpg', 'スモーキーで柔らかいBBQ', 3500, '123-4567', '名古屋市BBQ通り987', '052-123-4572', 3, 60, '12:00:00', '23:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(7, 'パスタパレス', '007.jpg', '新鮮で美味しいパスタ', 2200, '123-4567', '名古屋市パスタ通り147', '052-123-4573', 2, 40, '10:00:00', '22:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(8, 'シーフードデライト', '008.jpg', '新鮮なシーフード料理', 4000, '123-4567', '名古屋市シーフード通り258', '052-123-4574', 5, 50, '11:00:00', '21:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(9, 'ベジタリアンビストロ', '009.jpg', 'ヘルシーで美味しいベジタリアン料理', 2000, '123-4567', '名古屋市ベジタリアン通り369', '052-123-4575', 6, 45, '10:30:00', '20:30:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(10, 'デザートヘイブン', '010.jpg', '甘くて美味しいデザート', 1000, '123-4567', '名古屋市デザート通り741', '052-123-4576', 7, 20, '09:00:00', '19:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(11, 'テストレストラン', NULL, 'テスト説明', 2000, '123-4567', '名古屋市テスト通り123', '052-123-4567', 1, 10, '08:00:00', '18:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(12, 'テストレストラン2', '', 'テスト説明2', 2500, '123-4567', '名古屋市テスト通り456', '052-123-4568', 1, 15, '07:00:00', '17:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+-- ユーザーデータ -- 
+INSERT IGNORE INTO users (id, name, furigana, postal_code, address, phone_number, email, password, role_id, enabled, subscription_status, stripe_customer_id) VALUES
+(1, 'Free Member', 'フリーメンバー', '123-4567', 'Free Address', '111-1111-1111', 'free@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE', NULL),
+(2, 'Premium Member', 'プレミアムメンバー', '234-5678', 'Premium Address', '222-2222-2222', 'premium@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_PREMIUM' LIMIT 1), true, 'ACTIVE', 'cus_premium_member_12345'),
+(3, 'Admin User', 'アドミンユーザー', '345-6789', 'Admin Address', '333-3333-3333', 'admin@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_ADMIN' LIMIT 1), true, 'ACTIVE', NULL),
+(4, '田中 一郎', 'タナカ イチロウ', '456-7890', '名古屋市中区栄1-1-1', '090-1111-2222', 'ichiro.tanaka@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE', NULL),
+(5, '鈴木 花子', 'スズキ ハナコ', '123-7890', '名古屋市西区名駅3-3-3', '090-3333-4444', 'hanako.suzuki@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE', NULL),
+(6, '佐藤 次郎', 'サトウ ジロウ', '789-1234', '名古屋市東区東桜4-4-4', '090-5555-6666', 'jiro.sato@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE', NULL),
+(7, '山田 太郎', 'ヤマダ タロウ', '234-5678', '名古屋市南区大須5-5-5', '090-7777-8888', 'taro.yamada@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE', NULL),
+(8, '伊藤 美咲', 'イトウ ミサキ', '567-8901', '名古屋市港区港南1-1-1', '090-9999-0000', 'misaki.ito@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE', NULL),
+(9, '高橋 勇', 'タカハシ イサム', '345-6789', '名古屋市守山区小幡2-2-2', '090-1234-5678', 'isamu.takahashi@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE', NULL),
+(10, '松本 愛', 'マツモト アイ', '789-0123', '名古屋市瑞穂区弥富町6-6-6', '090-8765-4321', 'ai.matsumoto@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE', NULL),
+(11, '中村 健太', 'ナカムラ ケンタ', '456-0123', '名古屋市熱田区神宮西7-7-7', '090-3456-7890', 'kenta.nakamura@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE', NULL),
+(12, '小林 真由美', 'コバヤシ マユミ', '123-8901', '名古屋市千種区山手通8-8-8', '090-5678-1234', 'mayumi.kobayashi@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE', NULL),
+(13, '加藤 仁', 'カトウ ヒトシ', '678-9012', '名古屋市名東区藤ヶ丘9-9-9', '090-7890-1234', 'hitoshi.kato@example.com', '$2a$10$fLkgnX6vtfaUCh5/NdjHa.3giUiF..TLsIlnJH4lJEKGdLeaV.eKW', (SELECT id FROM roles WHERE name = 'ROLE_FREE' LIMIT 1), true, 'INACTIVE', NULL);
 
 -- rolesテーブル
 INSERT IGNORE INTO roles (id, name) VALUES 

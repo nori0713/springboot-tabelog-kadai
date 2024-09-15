@@ -1,0 +1,138 @@
+package com.example.nagoyameshi.controller;
+
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.entity.VerificationToken;
+import com.example.nagoyameshi.event.SignupEventPublisher;
+import com.example.nagoyameshi.form.SignupForm;
+import com.example.nagoyameshi.security.UserDetailsImpl;
+import com.example.nagoyameshi.service.UserService;
+import com.example.nagoyameshi.service.VerificationTokenService;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@Controller
+public class AuthController {
+	private final UserService userService;
+	private final SignupEventPublisher signupEventPublisher;
+	private final VerificationTokenService verificationTokenService;
+
+	public AuthController(UserService userService, SignupEventPublisher signupEventPublisher,
+			VerificationTokenService verificationTokenService) {
+		this.userService = userService;
+		this.signupEventPublisher = signupEventPublisher;
+		this.verificationTokenService = verificationTokenService;
+	}
+
+	@GetMapping("/signup")
+	public String signup(Model model) {
+		model.addAttribute("signupForm", new SignupForm());
+		return "auth/signup";
+	}
+
+	@PostMapping("/signup")
+	public String signup(@ModelAttribute @Validated SignupForm signupForm, BindingResult bindingResult,
+			RedirectAttributes redirectAttributes, HttpServletRequest request) {
+		// パスワードと確認用パスワードの一致をチェック
+		if (!signupForm.getPassword().equals(signupForm.getPasswordConfirmation())) {
+			FieldError passwordError = new FieldError(bindingResult.getObjectName(), "passwordConfirmation",
+					"パスワードが一致しません。");
+			bindingResult.addError(passwordError);
+		}
+
+		// メールアドレスが既に登録されているかどうかをチェック
+		if (userService.isEmailRegistered(signupForm.getEmail())) {
+			FieldError emailError = new FieldError(bindingResult.getObjectName(), "email", "このメールアドレスは既に登録されています。");
+			bindingResult.addError(emailError);
+		}
+
+		if (bindingResult.hasErrors()) {
+			return "auth/signup";
+		}
+
+		// ユーザー作成
+		User createdUser = userService.create(signupForm);
+
+		// メール認証イベントを発行
+		String requestUrl = new String(request.getRequestURL());
+		signupEventPublisher.publishSignupEvent(createdUser, requestUrl);
+
+		redirectAttributes.addFlashAttribute("successMessage",
+				"ご入力いただいたメールアドレスに認証メールを送信しました。メールに記載されているリンクをクリックし、会員登録を完了してください。");
+
+		return "redirect:/login";
+	}
+
+	@GetMapping("/signup/verify")
+	public String verify(@RequestParam(name = "token") String token, HttpServletRequest request, Model model) {
+		VerificationToken verificationToken = verificationTokenService.getVerificationToken(token);
+
+		if (verificationToken != null) {
+			User user = verificationToken.getUser();
+			userService.enableUser(user); // ユーザーを有効化
+
+			// 有料会員かどうかを確認
+			if ("ROLE_PREMIUM".equals(user.getRole().getName())) { // ロール名の確認
+				// サブスクリプションのセッションURLを生成してリダイレクト
+				String sessionUrl = userService.createSubscriptionSession(request, user.getEmail());
+				return "redirect:" + sessionUrl;
+			}
+
+			// 無料会員の場合、ログインページにリダイレクト
+			model.addAttribute("successMessage", "メール認証が完了しました。ログインしてください。");
+			return "auth/login";
+		} else {
+			model.addAttribute("errorMessage", "トークンが無効です。");
+			return "auth/verify";
+		}
+	}
+
+	@GetMapping("/login")
+	public String login(Model model) {
+		return "auth/login"; // ログインページのテンプレート名を指定
+	}
+
+	@GetMapping("/change-password")
+	public String showChangePasswordForm(Model model) {
+		return "auth/change-password"; // パスワード変更フォームのテンプレート
+	}
+
+	@PostMapping("/change-password")
+	public String changePassword(@AuthenticationPrincipal UserDetailsImpl userDetails,
+			@RequestParam("currentPassword") String currentPassword,
+			@RequestParam("newPassword") String newPassword,
+			@RequestParam("confirmNewPassword") String confirmNewPassword,
+			Model model, RedirectAttributes redirectAttributes) {
+		Integer userId = userDetails.getUser().getId(); // ログイン中のユーザーIDを取得
+
+		// 現在のパスワードの一致を確認
+		if (!userService.isCurrentPasswordValid(userId, currentPassword)) {
+			model.addAttribute("errorMessage", "現在のパスワードが正しくありません。");
+			return "auth/change-password";
+		}
+
+		// 新しいパスワードの一致を確認
+		if (!newPassword.equals(confirmNewPassword)) {
+			model.addAttribute("errorMessage", "新しいパスワードが一致しません。");
+			return "auth/change-password";
+		}
+
+		// パスワードの更新
+		userService.updatePassword(userId, newPassword);
+
+		redirectAttributes.addFlashAttribute("successMessage", "パスワードが変更されました。");
+		return "redirect:/auth/login"; // パスワード変更後、ログインページにリダイレクト
+	}
+
+}

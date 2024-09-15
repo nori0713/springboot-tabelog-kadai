@@ -1,0 +1,145 @@
+package com.example.nagoyameshi.service;
+
+import java.util.UUID;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.nagoyameshi.entity.Role;
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.entity.VerificationToken;
+import com.example.nagoyameshi.form.SignupForm;
+import com.example.nagoyameshi.form.UserEditForm;
+import com.example.nagoyameshi.repository.RoleRepository;
+import com.example.nagoyameshi.repository.UserRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@Service
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final VerificationTokenService verificationTokenService;
+    private final EmailService emailService;
+
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder,
+                       VerificationTokenService verificationTokenService, EmailService emailService) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.verificationTokenService = verificationTokenService;
+        this.emailService = emailService;
+    }
+
+    @Transactional
+    public User create(SignupForm signupForm) {
+        User user = new User();
+        Role role;
+
+        if (signupForm.isPremiumSelected()) {
+            role = roleRepository.findByName("ROLE_PREMIUM");
+            if (role == null) {
+                throw new IllegalArgumentException("Role not found: ROLE_PREMIUM");
+            }
+            user.setSubscriptionStatus("INACTIVE");
+        } else {
+            role = roleRepository.findByName("ROLE_FREE");
+            if (role == null) {
+                throw new IllegalArgumentException("Role not found: ROLE_FREE");
+            }
+            user.setSubscriptionStatus("INACTIVE");
+        }
+
+        user.setName(signupForm.getName());
+        user.setFurigana(signupForm.getFurigana());
+        user.setPostalCode(signupForm.getPostalCode());
+        user.setAddress(signupForm.getAddress());
+        user.setPhoneNumber(signupForm.getPhoneNumber());
+        user.setEmail(signupForm.getEmail());
+        user.setPassword(passwordEncoder.encode(signupForm.getPassword()));
+        user.setRole(role);
+        user.setEnabled(false);
+
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public void update(UserEditForm userEditForm) {
+        User user = userRepository.getReferenceById(userEditForm.getId());
+
+        user.setName(userEditForm.getName());
+        user.setFurigana(userEditForm.getFurigana());
+        user.setPostalCode(userEditForm.getPostalCode());
+        user.setAddress(userEditForm.getAddress());
+        user.setPhoneNumber(userEditForm.getPhoneNumber());
+        user.setEmail(userEditForm.getEmail());
+
+        userRepository.save(user);
+    }
+
+    public boolean isEmailRegistered(String email) {
+        User user = userRepository.findByEmail(email);
+        return user != null;
+    }
+
+    @Transactional
+    public void enableUser(User user) {
+        user.setEnabled(true);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void upgradeToPremium(User user) {
+        Role premiumRole = roleRepository.findByName("ROLE_PREMIUM");
+        if (premiumRole != null) {
+            user.setRole(premiumRole);
+            user.setSubscriptionStatus("ACTIVE");
+            userRepository.save(user);
+        } else {
+            throw new IllegalArgumentException("Role not found: ROLE_PREMIUM");
+        }
+    }
+
+    // パスワードリセットトークンの生成とメール送信
+    public void sendPasswordResetToken(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new IllegalArgumentException("Email not found: " + email);
+        }
+
+        // ランダムなトークンを生成
+        String token = UUID.randomUUID().toString();
+
+        // トークンを保存
+        verificationTokenService.saveVerificationToken(user, token);
+
+        // パスワードリセットのメール送信
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
+    }
+
+    // パスワードリセット処理
+    public boolean resetPassword(String token, String newPassword) {
+        VerificationToken verificationToken = verificationTokenService.getVerificationToken(token);
+        if (verificationToken == null || verificationToken.isExpired()) {
+            return false; // トークンが無効または期限切れ
+        }
+
+        // パスワードの更新
+        User user = verificationToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // トークンを削除
+        verificationTokenService.deleteToken(verificationToken);
+
+        return true;
+    }
+
+    // パスワード確認用のチェック
+    public boolean isSamePassword(String password, String passwordConfirmation) {
+        return password.equals(passwordConfirmation);
+    }
+}

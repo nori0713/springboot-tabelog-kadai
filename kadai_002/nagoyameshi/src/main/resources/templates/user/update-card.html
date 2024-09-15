@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <div th:replace="~{fragment :: meta}"></div>   
+    <div th:replace="~{fragment :: styles}"></div>
+    <title>クレジットカード情報変更</title>   
+    <script src="https://js.stripe.com/v3/"></script> <!-- Stripe.jsの読み込み -->
+</head>
+<body>
+    <div class="nagoyameshi-wrapper">
+        <!-- ヘッダー -->
+        <div th:replace="~{fragment :: header}"></div>
+
+        <main>
+            <div class="container pt-4 pb-5 nagoyameshi-container">
+                <div class="row justify-content-center">
+                    <div class="col-xl-5 col-lg-6 col-md-8">
+                        <h1 class="mb-4 text-center">クレジットカード情報変更</h1>  
+
+                        <!-- エラーメッセージの表示 -->
+                        <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+                        
+                        <!-- 成功メッセージの表示 -->
+                        <div th:if="${successMessage}" class="alert alert-success">
+                            <span th:text="${successMessage}"></span>
+                        </div>
+
+                        <!-- クレジットカード変更フォーム -->
+                        <form id="payment-form">
+                            <!-- カード情報入力フィールド (Stripe Elementsが挿入される場所) -->
+                            <div id="card-element" class="form-control mb-3">
+                                <!-- Stripe Elementsがここに表示されます -->
+                            </div>
+
+                            <!-- 更新ボタン -->
+                            <div class="form-group d-flex justify-content-center my-4">
+                                <button id="submit-button" type="button" class="btn text-white shadow-sm w-50 nagoyameshi-btn">クレジットカード情報を更新</button>
+                            </div>
+                        </form>
+
+                        <!-- 戻るリンク -->
+                        <div class="text-center">
+                            <a th:href="@{/user}">会員情報に戻る</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- フッター -->
+        <div th:replace="~{fragment :: footer}"></div>
+    </div>
+
+    <div th:replace="~{fragment :: scripts}"></div>
+
+    <script>
+        // Stripe初期化
+        var stripe = Stripe('your-publishable-key-here'); // Stripeの公開鍵を設定
+        var elements = stripe.elements();
+        var cardElement = elements.create('card'); // カード要素を作成
+        cardElement.mount('#card-element'); // #card-element にマウント
+
+        // フォーム送信時の処理
+        var form = document.getElementById('payment-form');
+        var submitButton = document.getElementById('submit-button');
+
+        submitButton.addEventListener('click', function(event) {
+            event.preventDefault(); // フォームのデフォルト動作をキャンセル
+
+            stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement
+            }).then(function(result) {
+                if (result.error) {
+                    // エラーメッセージの表示
+                    var errorMessageDiv = document.getElementById('error-message');
+                    errorMessageDiv.style.display = 'block';
+                    errorMessageDiv.textContent = result.error.message;
+                } else {
+                    // サーバーへトークンを送信
+                    fetch('/user/update-card', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': document.querySelector('input[name="_csrf"]').value
+                        },
+                        body: JSON.stringify({
+                            paymentMethodId: result.paymentMethod.id
+                        }),
+                    }).then(function(response) {
+                        if (response.ok) {
+                            window.location.href = '/user'; // 成功したら会員情報ページにリダイレクト
+                        } else {
+                            document.getElementById('error-message').textContent = 'カード情報の更新に失敗しました。';
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

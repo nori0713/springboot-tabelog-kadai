@@ -1,0 +1,50 @@
+package com.example.nagoyameshi.service;
+
+import org.springframework.stereotype.Service;
+
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.entity.VerificationToken;
+import com.example.nagoyameshi.repository.VerificationTokenRepository;
+
+import jakarta.transaction.Transactional;
+import java.sql.Timestamp;
+import java.util.UUID;
+
+@Service
+public class VerificationTokenService {
+    private final VerificationTokenRepository verificationTokenRepository;
+
+    public VerificationTokenService(VerificationTokenRepository verificationTokenRepository) {
+        this.verificationTokenRepository = verificationTokenRepository;
+    }
+
+    @Transactional
+    public void create(User user) {
+        VerificationToken verificationToken = new VerificationToken();
+
+        // ランダムなトークンを生成
+        String token = UUID.randomUUID().toString();
+
+        verificationToken.setUser(user);
+        verificationToken.setToken(token);
+        verificationToken.setExpirationDate(); // 有効期限を設定
+
+        verificationTokenRepository.save(verificationToken);
+    }
+
+    // トークンの文字列で検索した結果を返す
+    public VerificationToken getVerificationToken(String token) {
+        return verificationTokenRepository.findByToken(token);
+    }
+
+    // トークンが有効かチェックするメソッド
+    public boolean isTokenExpired(VerificationToken token) {
+        return token.isExpired();
+    }
+
+    // トークンを削除するメソッド
+    @Transactional
+    public void delete(VerificationToken token) {
+        verificationTokenRepository.delete(token);
+    }
+}

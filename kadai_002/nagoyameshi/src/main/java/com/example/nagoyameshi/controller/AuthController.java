@@ -1,5 +1,6 @@
 package com.example.nagoyameshi.controller;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -15,6 +16,7 @@ import com.example.nagoyameshi.entity.User;
 import com.example.nagoyameshi.entity.VerificationToken;
 import com.example.nagoyameshi.event.SignupEventPublisher;
 import com.example.nagoyameshi.form.SignupForm;
+import com.example.nagoyameshi.security.UserDetailsImpl;
 import com.example.nagoyameshi.service.UserService;
 import com.example.nagoyameshi.service.VerificationTokenService;
 
@@ -100,4 +102,37 @@ public class AuthController {
 	public String login(Model model) {
 		return "auth/login"; // ログインページのテンプレート名を指定
 	}
+
+	@GetMapping("/change-password")
+	public String showChangePasswordForm(Model model) {
+		return "auth/change-password"; // パスワード変更フォームのテンプレート
+	}
+
+	@PostMapping("/change-password")
+	public String changePassword(@AuthenticationPrincipal UserDetailsImpl userDetails,
+			@RequestParam("currentPassword") String currentPassword,
+			@RequestParam("newPassword") String newPassword,
+			@RequestParam("confirmNewPassword") String confirmNewPassword,
+			Model model, RedirectAttributes redirectAttributes) {
+		Integer userId = userDetails.getUser().getId(); // ログイン中のユーザーIDを取得
+
+		// 現在のパスワードの一致を確認
+		if (!userService.isCurrentPasswordValid(userId, currentPassword)) {
+			model.addAttribute("errorMessage", "現在のパスワードが正しくありません。");
+			return "auth/change-password";
+		}
+
+		// 新しいパスワードの一致を確認
+		if (!newPassword.equals(confirmNewPassword)) {
+			model.addAttribute("errorMessage", "新しいパスワードが一致しません。");
+			return "auth/change-password";
+		}
+
+		// パスワードの更新
+		userService.updatePassword(userId, newPassword);
+
+		redirectAttributes.addFlashAttribute("successMessage", "パスワードが変更されました。");
+		return "redirect:/login"; // パスワード変更後、ログインページにリダイレクト
+	}
+
 }

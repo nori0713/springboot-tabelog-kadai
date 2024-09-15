@@ -20,8 +20,8 @@ public class UserService {
 	private final PasswordEncoder passwordEncoder;
 	private final StripeService stripeService;
 
-	public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder,
-			StripeService stripeService) {
+	public UserService(UserRepository userRepository, RoleRepository roleRepository,
+			PasswordEncoder passwordEncoder, StripeService stripeService) {
 		this.userRepository = userRepository;
 		this.roleRepository = roleRepository;
 		this.passwordEncoder = passwordEncoder;
@@ -31,8 +31,8 @@ public class UserService {
 	@Transactional
 	public User create(SignupForm signupForm) {
 		User user = new User();
-
 		Role role;
+
 		if (signupForm.isPremiumSelected()) {
 			role = roleRepository.findByName("ROLE_PREMIUM");
 			if (role == null) {
@@ -57,11 +57,18 @@ public class UserService {
 		user.setRole(role);
 		user.setEnabled(false);
 
+		// Stripe 顧客を作成
+		try {
+			String stripeCustomerId = stripeService.findOrCreateCustomerByEmail(user.getEmail());
+			user.setStripeCustomerId(stripeCustomerId); // Stripe 顧客 ID を保存
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to create Stripe customer.", e);
+		}
+
 		return userRepository.save(user);
 	}
 
 	public String createSubscriptionSession(HttpServletRequest request, String userEmail) {
-		// StripeServiceのメソッドを呼び出す際に、HttpServletRequestとユーザーのメールを渡す
 		return stripeService.createSubscriptionSession(request, userEmail);
 	}
 
@@ -125,14 +132,51 @@ public class UserService {
 	@Transactional
 	public String handlePostVerification(User user, HttpServletRequest request) {
 		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
-			// プレミアム会員の場合はStripe決済ページへリダイレクト
 			return "redirect:" + createSubscriptionSession(request, user.getEmail());
 		} else {
-			// 無料会員の場合はアカウントを有効化し、ログインページへリダイレクト
 			enableUser(user);
 			user.setSubscriptionStatus("ACTIVE");
 			userRepository.save(user);
 			return "redirect:/login";
+		}
+	}
+
+	// 現在のパスワードが正しいか確認
+	public boolean isCurrentPasswordValid(Integer userId, String currentPassword) {
+		User user = userRepository.findById(userId).orElse(null);
+		if (user == null) {
+			return false;
+		}
+		return passwordEncoder.matches(currentPassword, user.getPassword());
+	}
+
+	// パスワードの更新
+	@Transactional
+	public void updatePassword(Integer userId, String newPassword) {
+		User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+		user.setPassword(passwordEncoder.encode(newPassword));
+		userRepository.save(user);
+	}
+
+	// クレジットカード情報の更新
+	@Transactional
+	public void updateCreditCard(String customerId, String paymentMethodId) {
+		try {
+			stripeService.updateCustomerCreditCard(customerId, paymentMethodId);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to update credit card information.", e);
+		}
+	}
+
+	@Transactional
+	public void updateCreditCard(Integer userId, String paymentMethodId) {
+		User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+		// Stripe APIでクレジットカード情報を更新（Stripeの顧客にPaymentMethodを追加）
+		try {
+			stripeService.attachPaymentMethodToCustomer(user.getEmail(), paymentMethodId);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to update credit card: " + e.getMessage());
 		}
 	}
 }

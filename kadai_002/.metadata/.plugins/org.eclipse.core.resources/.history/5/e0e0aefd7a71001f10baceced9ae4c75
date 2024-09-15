@@ -1,0 +1,113 @@
+package com.example.nagoyameshi.service;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.Customer;
+import com.stripe.model.PaymentMethod;
+import com.stripe.model.PaymentMethodCollection;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.PaymentMethodAttachParams;
+import com.stripe.param.PaymentMethodCreateParams;
+import com.stripe.param.checkout.SessionCreateParams;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
+
+@Service
+public class StripeService {
+
+    @Value("${stripe.api.key}")
+    private String stripeApiKey;
+
+    @Value("${stripe.price.id}")
+    private String stripePriceId;
+
+    @PostConstruct
+    public void init() {
+        // StripeのAPIキーを初期化
+        Stripe.apiKey = stripeApiKey;
+    }
+
+    // サブスクリプション用のセッションを作成し、Stripeに必要な情報を返す
+    public String createSubscriptionSession(HttpServletRequest request, String userEmail) {
+        String baseUrl = getBaseUrl(request);
+        if (baseUrl == null) {
+            // ベースURLが取得できない場合のエラーハンドリング
+            throw new IllegalStateException("Base URL cannot be determined.");
+        }
+
+        // Stripeのセッション作成
+        SessionCreateParams params = SessionCreateParams.builder()
+                .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
+                .addLineItem(
+                        SessionCreateParams.LineItem.builder()
+                                .setPrice(stripePriceId) // 事前にStripeで作成した価格IDを使用
+                                .setQuantity(1L)
+                                .build())
+                .setMode(SessionCreateParams.Mode.SUBSCRIPTION) // サブスクリプションモードに設定
+                .setSuccessUrl(baseUrl + "/subscription/success")
+                .setCancelUrl(baseUrl + "/subscription/cancel")
+                .setCustomerEmail(userEmail) // ユーザーのメールアドレスを設定
+                .build();
+
+        try {
+            Session session = Session.create(params);
+            return session.getUrl(); // セッションのURLを返す
+        } catch (StripeException e) {
+            e.printStackTrace();
+            return null; // エラーハンドリングを強化
+        }
+    }
+
+    // 顧客のクレジットカード情報を更新するメソッド
+    public void updateCustomerCreditCard(String customerEmail, String newCardToken) throws StripeException {
+        // 顧客を取得する（顧客IDを保存しておくことが推奨されます）
+        Customer customer = findCustomerByEmail(customerEmail);
+
+        if (customer != null) {
+            // 新しいカードをPaymentMethodとして作成
+            PaymentMethodCreateParams createParams = PaymentMethodCreateParams.builder()
+                    .setCard(PaymentMethodCreateParams.Card.builder().setToken(newCardToken).build())
+                    .setType(PaymentMethodCreateParams.Type.CARD)
+                    .build();
+            PaymentMethod paymentMethod = PaymentMethod.create(createParams);
+
+            // 新しいカードを顧客に紐付け
+            PaymentMethodAttachParams attachParams = PaymentMethodAttachParams.builder()
+                    .setCustomer(customer.getId())
+                    .build();
+            paymentMethod.attach(attachParams);
+
+            // 顧客のデフォルト支払い方法を更新
+            customer.update(CustomerUpdateParams.builder()
+                    .setInvoiceSettings(
+                            CustomerUpdateParams.InvoiceSettings.builder()
+                                    .setDefaultPaymentMethod(paymentMethod.getId())
+                                    .build())
+                    .build());
+        } else {
+            throw new IllegalArgumentException("顧客が見つかりませんでした: " + customerEmail);
+        }
+    }
+
+    // メールアドレスで顧客を検索するヘルパーメソッド
+    private Customer findCustomerByEmail(String email) throws StripeException {
+        // 顧客情報をメールで検索する（Stripeではメールアドレスでの直接検索ができないため、別途顧客IDを管理するか、
+        // StripeのCustomerオブジェクトを使用してフィルタリングする必要があります）
+        // 実際にはメールアドレスで顧客を検索するロジックをここに実装します
+        return null; // 顧客検索ロジックを実装する必要があります
+    }
+
+    // リクエストからベースURLを取得するヘルパーメソッド
+    private String getBaseUrl(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        String requestUrl = request.getRequestURL().toString();
+        String servletPath = request.getServletPath();
+        return requestUrl.replace(servletPath, "");
+    }
+}
