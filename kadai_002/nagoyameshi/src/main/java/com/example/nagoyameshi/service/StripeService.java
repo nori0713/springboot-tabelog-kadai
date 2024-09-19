@@ -3,6 +3,8 @@ package com.example.nagoyameshi.service;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -11,14 +13,13 @@ import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 import com.stripe.model.CustomerCollection;
 import com.stripe.model.PaymentMethod;
-import com.stripe.model.PaymentMethod.Card;
 import com.stripe.model.PaymentMethodCollection;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.CustomerListParams;
 import com.stripe.param.CustomerUpdateParams;
 import com.stripe.param.PaymentMethodAttachParams;
-import com.stripe.param.PaymentMethodCreateParams;
+import com.stripe.param.PaymentMethodDetachParams;
 import com.stripe.param.PaymentMethodListParams;
 import com.stripe.param.checkout.SessionCreateParams;
 
@@ -28,6 +29,8 @@ import jakarta.servlet.http.HttpServletRequest;
 @Service
 public class StripeService {
 
+	private static final Logger logger = LoggerFactory.getLogger(StripeService.class);
+
 	@Value("${stripe.api.key}")
 	private String stripeApiKey;
 
@@ -36,66 +39,73 @@ public class StripeService {
 
 	@PostConstruct
 	public void init() {
-		// StripeのAPIキーを初期化
 		Stripe.apiKey = stripeApiKey;
+		logger.info("Stripe API initialized with key: {}", stripeApiKey);
 	}
 
 	// サブスクリプション用のセッションを作成し、Stripeに必要な情報を返す
 	public String createSubscriptionSession(HttpServletRequest request, String userEmail) {
 		String baseUrl = getBaseUrl(request);
 		if (baseUrl == null) {
-			// ベースURLが取得できない場合のエラーハンドリング
+			logger.error("Base URL cannot be determined.");
 			throw new IllegalStateException("Base URL cannot be determined.");
 		}
 
-		// Stripeのセッション作成
+		// セッション作成の処理
 		SessionCreateParams params = SessionCreateParams.builder()
 				.addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
-				.addLineItem(
-						SessionCreateParams.LineItem.builder()
-								.setPrice(stripePriceId) // 事前にStripeで作成した価格IDを使用
-								.setQuantity(1L)
-								.build())
-				.setMode(SessionCreateParams.Mode.SUBSCRIPTION) // サブスクリプションモードに設定
+				.addLineItem(SessionCreateParams.LineItem.builder()
+						.setPrice(stripePriceId)
+						.setQuantity(1L)
+						.build())
+				.setMode(SessionCreateParams.Mode.SUBSCRIPTION)
 				.setSuccessUrl(baseUrl + "/subscription/success")
 				.setCancelUrl(baseUrl + "/subscription/cancel")
-				.setCustomerEmail(userEmail) // ユーザーのメールアドレスを設定
+				.setCustomerEmail(userEmail)
 				.build();
 
 		try {
 			Session session = Session.create(params);
-			return session.getUrl(); // セッションのURLを返す
+			logger.info("Created subscription session: {}", session.getId());
+			return session.getUrl();
 		} catch (StripeException e) {
-			e.printStackTrace();
-			return null; // エラーハンドリングを強化
+			logger.error("Failed to create subscription session: ", e);
+			return null;
 		}
 	}
 
-	// クレジットカード情報から PaymentMethod を作成するメソッド
-	public String createPaymentMethod(String cardNumber, String expMonth, String expYear, String cvc)
-			throws StripeException {
-		PaymentMethodCreateParams.CardDetails cardDetails = PaymentMethodCreateParams.CardDetails.builder()
-				.setNumber(cardNumber)
-				.setExpMonth(Long.parseLong(expMonth))
-				.setExpYear(Long.parseLong(expYear))
-				.setCvc(cvc)
+	// 顧客を検索または作成するメソッド
+	public String findOrCreateCustomerByEmail(String email) throws StripeException {
+		logger.info("Finding or creating customer with email: {}", email);
+		CustomerListParams listParams = CustomerListParams.builder()
+				.setEmail(email)
+				.setLimit(1L)
 				.build();
 
-		PaymentMethodCreateParams params = PaymentMethodCreateParams.builder()
-				.setType(PaymentMethodCreateParams.Type.CARD)
-				.setCard(cardDetails)
+		CustomerCollection customers = Customer.list(listParams);
+
+		if (!customers.getData().isEmpty()) {
+			logger.info("Customer found with email: {}", email);
+			return customers.getData().get(0).getId();
+		}
+
+		CustomerCreateParams createParams = CustomerCreateParams.builder()
+				.setEmail(email)
 				.build();
 
-		PaymentMethod paymentMethod = PaymentMethod.create(params);
-		return paymentMethod.getId(); // PaymentMethod の ID を返す
+		Customer customer = Customer.create(createParams);
+		logger.info("Created new customer: {}", customer.getId());
+		return customer.getId();
 	}
 
 	// クレジットカード情報を更新するメソッド
 	public void updateCustomerCreditCard(String customerId, String paymentMethodId) throws StripeException {
-		// 顧客の情報を取得
-		Customer customer = Customer.retrieve(customerId);
+		logger.info("Updating credit card for customer: {}", customerId);
 
-		// 支払い方法を顧客に紐付ける
+		// 既存の支払い方法をデタッチ
+		detachOldPaymentMethod(customerId);
+
+		// 新しい支払い方法を顧客に紐付ける
 		PaymentMethod paymentMethod = PaymentMethod.retrieve(paymentMethodId);
 		PaymentMethodAttachParams attachParams = PaymentMethodAttachParams.builder()
 				.setCustomer(customerId)
@@ -103,86 +113,101 @@ public class StripeService {
 		paymentMethod.attach(attachParams);
 
 		// 顧客のデフォルト支払い方法を更新
-		CustomerUpdateParams params = CustomerUpdateParams.builder()
+		CustomerUpdateParams customerUpdateParams = CustomerUpdateParams.builder()
 				.setInvoiceSettings(
 						CustomerUpdateParams.InvoiceSettings.builder()
 								.setDefaultPaymentMethod(paymentMethodId)
 								.build())
 				.build();
-		customer.update(params);
+
+		Customer customer = Customer.retrieve(customerId);
+		customer.update(customerUpdateParams);
+
+		logger.info("Updated default payment method for customer: {}", customerId);
 	}
 
-	// リクエストからベースURLを取得するヘルパーメソッド
-	private String getBaseUrl(HttpServletRequest request) {
-		if (request == null) {
-			return null; // Requestがnullの場合はnullを返す
-		}
-		String requestUrl = request.getRequestURL().toString();
-		String servletPath = request.getServletPath();
-		return requestUrl.replace(servletPath, "");
-	}
+	// 既存の支払い方法を削除（デタッチ）するメソッド
+	public void detachOldPaymentMethod(String customerId) throws StripeException {
+		logger.info("Detaching old payment methods for customer: {}", customerId);
 
-	// 顧客を検索または作成するメソッド
-	public String findOrCreateCustomerByEmail(String email) throws StripeException {
-		// 1. 既存の顧客をメールアドレスで検索
-		CustomerListParams listParams = CustomerListParams.builder()
-				.setEmail(email)
-				.setLimit(1L) // 同じメールアドレスで一意の顧客が返ると仮定している
+		// 既存の支払い方法を取得
+		PaymentMethodListParams listParams = PaymentMethodListParams.builder()
+				.setCustomer(customerId)
+				.setType(PaymentMethodListParams.Type.CARD)
 				.build();
 
-		CustomerCollection customers = Customer.list(listParams);
+		PaymentMethodCollection paymentMethods = PaymentMethod.list(listParams);
 
-		if (!customers.getData().isEmpty()) {
-			// 既存の顧客が見つかった場合、その顧客IDを返す
-			return customers.getData().get(0).getId();
+		// すべての支払い方法をデタッチ
+		for (PaymentMethod paymentMethod : paymentMethods.getData()) {
+			logger.info("Detaching payment method: {}", paymentMethod.getId());
+			paymentMethod.detach(PaymentMethodDetachParams.builder().build());
 		}
-
-		// 2. 顧客が存在しない場合は、新規作成
-		CustomerCreateParams createParams = CustomerCreateParams.builder()
-				.setEmail(email)
-				.build();
-
-		Customer customer = Customer.create(createParams);
-		return customer.getId(); // 新しく作成された顧客のIDを返す
 	}
 
-	public void attachPaymentMethodToCustomer(String customerEmail, String paymentMethodId) throws StripeException {
-		// Stripe APIを使って、PaymentMethodを既存の顧客に追加
-		PaymentMethod paymentMethod = PaymentMethod.retrieve(paymentMethodId);
-		// 顧客ID（この例ではメールアドレスに基づいて検索）
-		String customerId = findOrCreateCustomerByEmail(customerEmail); // ここは顧客の作成/検索を行うメソッド
-		paymentMethod.attach(PaymentMethodAttachParams.builder().setCustomer(customerId).build());
-	}
-
+	// クレジットカード情報を取得するメソッド
 	public Map<String, String> getCreditCardInfo(String customerId) throws StripeException {
-		// 顧客IDがnullまたは空の場合のエラーハンドリング
 		if (customerId == null || customerId.isEmpty()) {
+			logger.error("顧客IDが無効です: {}", customerId);
 			throw new IllegalArgumentException("顧客IDが無効です。");
 		}
 
-		// Stripe APIを使って顧客のPaymentMethodを取得
+		logger.info("Retrieving credit card info for customer: {}", customerId);
+
 		PaymentMethodCollection paymentMethods = PaymentMethod.list(
 				PaymentMethodListParams.builder()
 						.setCustomer(customerId)
 						.setType(PaymentMethodListParams.Type.CARD)
 						.build());
 
+		// PaymentMethodリストの内容をログ出力
+		logger.info("取得したPaymentMethodのリスト: {}", paymentMethods.getData());
+
 		if (paymentMethods.getData().isEmpty()) {
+			logger.warn("クレジットカード情報が見つかりません: {}", customerId);
 			throw new IllegalStateException("クレジットカード情報が存在しません。");
 		}
 
-		// 最新のクレジットカード情報を取得
+		// 支払い方法が正しいか確認
 		PaymentMethod paymentMethod = paymentMethods.getData().get(0);
-		Card card = paymentMethod.getCard();
+		logger.info("PaymentMethod details: {}", paymentMethod);
+
+		PaymentMethod.Card card = paymentMethod.getCard();
+		if (card == null) {
+			logger.error("Card details are null for payment method: {}", paymentMethod.getId());
+			throw new IllegalStateException("クレジットカード情報が取得できませんでした。");
+		}
 
 		// 必要な情報をMapにして返す
 		Map<String, String> cardInfo = new HashMap<>();
-		cardInfo.put("number", "**** **** **** " + card.getLast4()); // カード番号の下4桁のみ表示
-		cardInfo.put("expiry", card.getExpMonth() + "/" + card.getExpYear()); // 有効期限
+		cardInfo.put("number", "**** **** **** " + card.getLast4());
+		cardInfo.put("expiry", card.getExpMonth() + "/" + card.getExpYear());
 
-		// ログで取得した情報を確認（デバッグ用）
-		System.out.println("Retrieved card info: " + cardInfo);
+		logger.info("Retrieved card info: {}", cardInfo);
 
 		return cardInfo;
+	}
+
+	// 支払い方法を顧客に紐付けるメソッド
+	public void attachPaymentMethodToCustomer(String customerEmail, String paymentMethodId) throws StripeException {
+		logger.info("Attaching payment method {} to customer with email {}", paymentMethodId, customerEmail);
+		PaymentMethod paymentMethod = PaymentMethod.retrieve(paymentMethodId);
+		String customerId = findOrCreateCustomerByEmail(customerEmail);
+		PaymentMethodAttachParams attachParams = PaymentMethodAttachParams.builder()
+				.setCustomer(customerId)
+				.build();
+		paymentMethod.attach(attachParams);
+		logger.info("Attached payment method {} to customer {}", paymentMethodId, customerId);
+	}
+
+	// リクエストからベースURLを取得するヘルパーメソッド
+	private String getBaseUrl(HttpServletRequest request) {
+		if (request == null) {
+			logger.error("Request is null");
+			return null;
+		}
+		String requestUrl = request.getRequestURL().toString();
+		String servletPath = request.getServletPath();
+		return requestUrl.replace(servletPath, "");
 	}
 }

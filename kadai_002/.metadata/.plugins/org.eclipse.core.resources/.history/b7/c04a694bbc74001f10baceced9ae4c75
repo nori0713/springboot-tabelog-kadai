@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">    
+<head>
+    <div th:replace="~{fragment :: meta}"></div>   
+    <div th:replace="~{fragment :: styles}"></div>
+    <title>会員情報</title>   
+</head>
+<body>
+    <div class="nagoyameshi-wrapper">
+        <!-- ヘッダー -->
+        <div th:replace="~{fragment :: header}"></div>
+        
+        <main>
+            <div class="container pb-5 nagoyameshi-container">
+                <div class="row justify-content-center">
+                    <div class="col-xl-5 col-lg-6 col-md-8">
+                        <nav class="my-3" style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0"> 
+                                <li class="breadcrumb-item"><a th:href="@{/}">ホーム</a></li>                       
+                                <li class="breadcrumb-item active" aria-current="page">会員情報</li>
+                            </ol>
+                        </nav> 
+                        
+                        <h1 class="mb-3 text-center">会員情報</h1> 
+                        
+                        <!-- メッセージ表示 -->
+                        <div th:if="${successMessage}" class="alert alert-info">
+                            <span th:text="${successMessage}"></span>
+                        </div>                               
+                        
+                        <!-- 会員情報の編集リンク -->
+                        <div class="mb-3">
+                            <a th:href="@{/user/edit}">会員情報を編集</a>
+                        </div>
+                        
+                        <!-- パスワード変更リンク -->
+                        <div class="mb-3">
+                            <a th:href="@{/change-password}">パスワードを変更</a>
+                        </div>
+                        
+                        <!-- クレジットカード情報の変更リンク（有料会員のみ表示） -->
+                        <div th:if="${user.isPremiumMember()}" class="mb-3">
+                            <a th:href="@{/user/details}">クレジットカード情報を変更</a>
+                        </div>
+                        
+                        <!-- ユーザー情報の表示 -->
+                        <div class="container mb-4">
+                            <div class="row pb-2 mb-2 border-bottom">
+                                <div class="col-4">
+                                    <span class="fw-bold">氏名</span>
+                                </div>
+                                <div class="col">
+                                    <span th:text="${user.getName()}"></span>
+                                </div>
+                            </div>
+
+                            <div class="row pb-2 mb-2 border-bottom">
+                                <div class="col-4">
+                                    <span class="fw-bold">フリガナ</span>
+                                </div>
+                                <div class="col">
+                                    <span th:text="${user.getFurigana()}"></span>
+                                </div>
+                            </div>            
+
+                            <div class="row pb-2 mb-2 border-bottom">
+                                <div class="col-4">
+                                    <span class="fw-bold">郵便番号</span>
+                                </div>
+                                <div class="col">
+                                    <span th:text="${user.getPostalCode()}"></span>
+                                </div>
+                            </div>   
+                            
+                            <div class="row pb-2 mb-2 border-bottom">
+                                <div class="col-4">
+                                    <span class="fw-bold">住所</span>
+                                </div>
+                                <div class="col">
+                                    <span th:text="${user.getAddress()}"></span>
+                                </div>
+                            </div>
+
+                            <div class="row pb-2 mb-2 border-bottom">
+                                <div class="col-4">
+                                    <span class="fw-bold">電話番号</span>
+                                </div>
+                                <div class="col">
+                                    <span th:text="${user.getPhoneNumber()}"></span>
+                                </div>
+                            </div>  
+                            
+                            <div class="row pb-2 mb-2 border-bottom">
+                                <div class="col-4">
+                                    <span class="fw-bold">メールアドレス</span>
+                                </div>
+                                <div class="col">
+                                    <span th:text="${user.getEmail()}"></span>
+                                </div>
+                            </div>      
+
+							<!-- デバッグ用メッセージ -->
+							<div>
+							    <p th:if="${cardDetails != null}">クレジットカード情報は取得できています。</p>
+							    <p th:if="${cardDetails == null}">クレジットカード情報がnullです。</p>
+							</div>
+							
+							<!-- クレジットカード情報の表示（有料会員のみ） -->
+							<div th:if="${cardDetails != null}" class="container mb-4">
+							    <div class="row pb-2 mb-2 border-bottom">
+							        <div class="col-4">
+							            <span class="fw-bold">カード番号</span>
+							        </div>
+							        <div class="col">
+							            <span th:text="${cardDetails['number']}"></span>
+							        </div>
+							    </div>
+							    <div class="row pb-2 mb-2 border-bottom">
+							        <div class="col-4">
+							            <span class="fw-bold">有効期限</span>
+							        </div>
+							        <div class="col">
+							            <span th:text="${cardDetails['expiry']}"></span>
+							        </div>
+							    </div>
+							</div>
+							
+							<!-- クレジットカード情報が存在しない場合のエラーメッセージ -->
+							<div th:if="${cardDetails == null}">
+							    <div class="alert alert-danger" role="alert">
+							        クレジットカード情報が見つかりませんでした。
+							    </div>
+							</div>
+							
+							<!-- その他のエラーメッセージ -->
+							<div th:if="${errorMessage != null}">
+							    <div class="alert alert-danger" role="alert">
+							        <span th:text="${errorMessage}"></span>
+							    </div>
+							</div>                                                                                                                         
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- フッター -->
+        <div th:replace="~{fragment :: footer}"></div>
+    </div>    
+    
+    <div th:replace="~{fragment :: scripts}"></div>  
+</body>
+</html>
