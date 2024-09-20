@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <div th:replace="~{fragment :: meta}"></div>   
+    <div th:replace="~{fragment :: styles}"></div>
+    <title>クレジットカード情報変更</title>
+    <script src="https://js.stripe.com/v3/"></script> <!-- Stripe.jsの読み込み -->
+</head>
+<body>
+    <div class="nagoyameshi-wrapper">
+        <div th:replace="~{fragment :: header}"></div>
+
+        <main>
+            <div class="container pt-4 pb-5 nagoyameshi-container">
+                <div class="row justify-content-center">
+                    <div class="col-xl-5 col-lg-6 col-md-8">
+                        <h1 class="mb-4 text-center">クレジットカード情報変更</h1>  
+
+                        <!-- エラーメッセージ -->
+                        <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+
+                        <!-- 成功メッセージ -->
+                        <div id="success-message" class="alert alert-success" style="display: none;"></div>
+
+                        <!-- クレジットカード情報更新フォーム -->
+                        <form id="payment-form">
+                            <div id="card-element" class="form-control mb-3"></div>
+
+                            <div class="form-group d-flex justify-content-center my-4">
+                                <button id="submit-button" type="button" class="btn text-white shadow-sm w-50 nagoyameshi-btn">
+                                    クレジットカード情報を更新
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="text-center">
+                            <a th:href="@{/user}">会員情報に戻る</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div th:replace="~{fragment :: footer}"></div>
+    </div>
+
+    <div th:replace="~{fragment :: scripts}"></div>
+
+    <script>
+        // Stripe初期化
+        var stripe = Stripe('pk_test_51PNWvZP0vfuEMgGe35EFrxH8HOPJdxIccbdxYnzCcH86PtANs8NhTt3TmVSvhOaS2iKumUxj9jbnQg5hg1C83sJb00kAwIMReF'); // Stripeの公開鍵
+        var elements = stripe.elements();
+        var cardElement = elements.create('card'); // カード要素を作成
+        cardElement.mount('#card-element'); // #card-element にマウント
+
+        // フォーム送信時の処理
+        var form = document.getElementById('payment-form');
+        var submitButton = document.getElementById('submit-button');
+
+        submitButton.addEventListener('click', function(event) {
+            event.preventDefault(); // デフォルト動作をキャンセル
+
+            // CSRFトークンの取得
+            var csrfToken = document.querySelector('input[name="_csrf"]');
+            if (!csrfToken) {
+                document.getElementById('error-message').textContent = 'CSRFトークンが見つかりません。再読み込みして再試行してください。';
+                document.getElementById('error-message').style.display = 'block';
+                return;
+            }
+
+            // PaymentMethodの作成
+            stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement
+            }).then(function(result) {
+                if (result.error) {
+                    // エラーメッセージ表示
+                    var errorMessageDiv = document.getElementById('error-message');
+                    errorMessageDiv.style.display = 'block';
+                    errorMessageDiv.textContent = result.error.message;
+                } else {
+                    // サーバー側に送信
+                    fetch('/user/update-card', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken.value
+                        },
+                        body: JSON.stringify({
+                            paymentMethodId: result.paymentMethod.id
+                        }),
+                    }).then(function(response) {
+                        if (response.ok) {
+                            // 成功時にメッセージ表示
+                            document.getElementById('success-message').textContent = 'カード情報の更新が成功しました。';
+                            document.getElementById('success-message').style.display = 'block';
+                            setTimeout(function() {
+                                window.location.href = '/user'; 
+                            }, 2000); // 2秒後にリダイレクト
+                        } else {
+                            document.getElementById('error-message').textContent = 'カード情報の更新に失敗しました。';
+                            document.getElementById('error-message').style.display = 'block';
+                        }
+                    }).catch(function(error) {
+                        // ネットワークエラーなどの処理
+                        document.getElementById('error-message').textContent = 'カード情報の更新中にエラーが発生しました。';
+                        document.getElementById('error-message').style.display = 'block';
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

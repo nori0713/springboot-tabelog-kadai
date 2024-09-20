@@ -29,6 +29,7 @@ import com.example.nagoyameshi.service.UserService;
 import com.stripe.exception.StripeException;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Controller
 @RequestMapping("/user")
@@ -48,10 +49,16 @@ public class UserController {
 
 	// ユーザー情報ページの表示
 	@GetMapping
-	public String index(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model) {
+	public String index(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model,
+			HttpServletResponse response) {
 		logger.info("index method called"); // ログを追加
 		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
 		model.addAttribute("user", user);
+
+		// キャッシュ無効化のためのヘッダーを設定
+		response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+		response.setHeader("Pragma", "no-cache");
+		response.setDateHeader("Expires", 0);
 
 		// クレジットカード情報取得ロジックを追加（プレミアム会員の場合）
 		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
@@ -59,11 +66,12 @@ public class UserController {
 			try {
 				logger.info("Retrieving card details for customer: {}", user.getStripeCustomerId());
 				Map<String, String> cardDetails = stripeService.getCreditCardInfo(user.getStripeCustomerId());
+
 				if (cardDetails == null || cardDetails.isEmpty()) {
 					logger.warn("No card details found for customer: {}", user.getStripeCustomerId());
 					model.addAttribute("errorMessage", "クレジットカード情報が見つかりませんでした。");
 				} else {
-					logger.info("Card Details: {}", cardDetails);
+					logger.info("Card Details: {}", cardDetails); // 最新のカード情報をログに出力
 					model.addAttribute("cardDetails", cardDetails);
 				}
 			} catch (Exception e) {

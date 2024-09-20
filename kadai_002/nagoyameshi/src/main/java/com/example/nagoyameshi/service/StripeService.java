@@ -100,17 +100,18 @@ public class StripeService {
 
 	// クレジットカード情報を更新するメソッド
 	public void updateCustomerCreditCard(String customerId, String paymentMethodId) throws StripeException {
-		logger.info("Updating credit card for customer: {}", customerId);
-
-		// 既存の支払い方法をデタッチ
-		detachOldPaymentMethod(customerId);
-
-		// 新しい支払い方法を顧客に紐付ける
+		logger.info("Retrieving payment method: {}", paymentMethodId);
 		PaymentMethod paymentMethod = PaymentMethod.retrieve(paymentMethodId);
+
+		// 支払い方法を顧客に紐付ける
 		PaymentMethodAttachParams attachParams = PaymentMethodAttachParams.builder()
 				.setCustomer(customerId)
 				.build();
-		paymentMethod.attach(attachParams);
+		logger.info("Attaching payment method {} to customer {}", paymentMethodId, customerId);
+		PaymentMethod attachedPaymentMethod = paymentMethod.attach(attachParams); // attach の結果を確認
+
+		// 結果をログに出力して確認
+		logger.info("Attached payment method ID: {}", attachedPaymentMethod.getId());
 
 		// 顧客のデフォルト支払い方法を更新
 		CustomerUpdateParams customerUpdateParams = CustomerUpdateParams.builder()
@@ -119,11 +120,10 @@ public class StripeService {
 								.setDefaultPaymentMethod(paymentMethodId)
 								.build())
 				.build();
-
+		logger.info("Updating default payment method for customer: {}", customerId);
 		Customer customer = Customer.retrieve(customerId);
 		customer.update(customerUpdateParams);
-
-		logger.info("Updated default payment method for customer: {}", customerId);
+		logger.info("Successfully updated default payment method for customer: {}", customerId);
 	}
 
 	// 既存の支払い方法を削除（デタッチ）するメソッド
