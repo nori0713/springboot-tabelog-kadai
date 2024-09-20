@@ -48,7 +48,7 @@ public class UserController {
 	}
 
 	// ユーザー情報ページの表示
-	@GetMapping("/user")
+	@GetMapping // "/user" の指定をなくして、/user でアクセスできるように
 	public String index(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model,
 			HttpServletResponse response) {
 		logger.info("index method called");
@@ -82,6 +82,7 @@ public class UserController {
 			}
 		}
 
+		// ユーザー情報ページに遷移
 		return "user/index";
 	}
 
@@ -152,14 +153,8 @@ public class UserController {
 			// 新しい支払い方法を設定
 			stripeService.updateCustomerCreditCard(customerId, paymentMethodId);
 
-			// 新しいカード情報を再取得して、ユーザーに最新のデータを表示
-			Map<String, String> cardDetails = stripeService.getCreditCardInfo(customerId);
-
-			// 成功メッセージと最新のカード情報を返す
 			response.put("status", "success");
 			response.put("message", "Customer's card updated successfully");
-			response.put("cardDetails", cardDetails); // 新しいカード情報を返す
-
 		} catch (StripeException e) {
 			logger.error("Failed to update card for customer {}: {}", email, e);
 			response.put("status", "error");

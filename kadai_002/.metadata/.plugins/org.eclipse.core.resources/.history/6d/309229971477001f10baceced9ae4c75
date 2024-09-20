@@ -48,7 +48,7 @@ public class UserController {
 	}
 
 	// ユーザー情報ページの表示
-	@GetMapping("/user")
+	@GetMapping
 	public String index(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model,
 			HttpServletResponse response) {
 		logger.info("index method called");
@@ -64,6 +64,7 @@ public class UserController {
 
 		// プレミアム会員であればクレジットカード情報を取得
 		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
+			logger.info("User is a premium member.");
 			try {
 				// Stripe APIを使用してクレジットカード情報を取得
 				Map<String, String> cardDetails = stripeService.getCreditCardInfo(user.getStripeCustomerId());
@@ -77,18 +78,21 @@ public class UserController {
 					model.addAttribute("cardDetails", cardDetails); // 最新のカード情報をモデルに追加
 				}
 			} catch (Exception e) {
-				logger.error("Error retrieving card details: ", e);
+				logger.error("Error retrieving card details for customer: {}", user.getStripeCustomerId(), e);
 				model.addAttribute("errorMessage", "クレジットカード情報の取得に失敗しました。");
 			}
+		} else {
+			logger.info("User is not a premium member.");
 		}
 
+		// ユーザー情報ページに遷移
 		return "user/index";
 	}
 
 	// ユーザー情報編集ページの表示
 	@GetMapping("/edit")
 	public String edit(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model) {
-		logger.info("edit method called");
+		logger.info("edit method called"); // ログを追加
 		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
 		UserEditForm userEditForm = new UserEditForm(user.getId(), user.getName(), user.getFurigana(),
 				user.getPostalCode(), user.getAddress(), user.getPhoneNumber(), user.getEmail());
@@ -100,7 +104,7 @@ public class UserController {
 	@PostMapping("/update")
 	public String update(@ModelAttribute @Validated UserEditForm userEditForm, BindingResult bindingResult,
 			RedirectAttributes redirectAttributes) {
-		logger.info("update method called");
+		logger.info("update method called"); // ログを追加
 
 		// メールアドレスが変更されているか確認
 		if (userService.isEmailChanged(userEditForm) && userService.isEmailRegistered(userEditForm.getEmail())) {
@@ -121,7 +125,7 @@ public class UserController {
 	@PostMapping("/subscribe")
 	public String subscribeToPremium(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
 			HttpServletRequest request) {
-		logger.info("subscribeToPremium method called");
+		logger.info("subscribeToPremium method called"); // ログを追加
 		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
 		String checkoutUrl = stripeService.createSubscriptionSession(request, user.getEmail());
 		return "redirect:" + checkoutUrl;
@@ -130,8 +134,8 @@ public class UserController {
 	// クレジットカード情報更新フォームの表示
 	@GetMapping("/update-card")
 	public String showUpdateCardForm(Model model) {
-		logger.info("showUpdateCardForm method called");
-		return "user/update-card";
+		logger.info("showUpdateCardForm method called"); // ログを追加
+		return "user/update-card"; // クレジットカード情報の更新フォームページ
 	}
 
 	// クレジットカード情報の更新
@@ -141,25 +145,19 @@ public class UserController {
 			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
 		Map<String, Object> response = new HashMap<>();
 		String paymentMethodId = (String) payload.get("paymentMethodId");
-		String email = userDetailsImpl.getUser().getEmail();
+		String email = userDetailsImpl.getUser().getEmail(); // ユーザーのメールアドレスを取得
 
 		try {
 			String customerId = stripeService.findOrCreateCustomerByEmail(email);
 
-			// 必要に応じて、既存のクレジットカード情報を削除
-			stripeService.detachOldPaymentMethod(customerId);
+			// 既存のクレジットカード情報を削除（必要に応じて）
+			stripeService.detachOldPaymentMethod(customerId); // 必要に応じてこの処理をコメントアウト
 
 			// 新しい支払い方法を設定
 			stripeService.updateCustomerCreditCard(customerId, paymentMethodId);
 
-			// 新しいカード情報を再取得して、ユーザーに最新のデータを表示
-			Map<String, String> cardDetails = stripeService.getCreditCardInfo(customerId);
-
-			// 成功メッセージと最新のカード情報を返す
 			response.put("status", "success");
 			response.put("message", "Customer's card updated successfully");
-			response.put("cardDetails", cardDetails); // 新しいカード情報を返す
-
 		} catch (StripeException e) {
 			logger.error("Failed to update card for customer {}: {}", email, e);
 			response.put("status", "error");
@@ -171,21 +169,30 @@ public class UserController {
 	// ユーザーの詳細情報とクレジットカード情報の取得
 	@GetMapping("/details")
 	public String getUserDetails(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model) {
-		logger.info("getUserDetails method called");
+		logger.info("getUserDetails method called"); // メソッドが呼び出されたことを確認
 		User user = userDetailsImpl.getUser();
+		logger.info("User retrieved: {}", user.getEmail()); // ユーザー情報が取得されたか確認
 		model.addAttribute("user", user);
 
-		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
+		// プレミアム会員の場合、クレジットカード情報を取得
+		if (user.isPremiumMember()) { // もしくは `user.getRole().getName().equals("ROLE_PREMIUM")` を使用してもOK
+			logger.info("User is a premium member.");
 			try {
+				logger.info("Retrieving card details for customer: {}", user.getStripeCustomerId());
 				Map<String, String> cardDetails = stripeService.getCreditCardInfo(user.getStripeCustomerId());
 				if (cardDetails == null || cardDetails.isEmpty()) {
+					logger.warn("No card details found for customer: {}", user.getStripeCustomerId());
 					model.addAttribute("errorMessage", "クレジットカード情報が見つかりませんでした。");
 				} else {
+					logger.info("Card Details: {}", cardDetails);
 					model.addAttribute("cardDetails", cardDetails);
 				}
 			} catch (Exception e) {
+				logger.error("Error retrieving card details for customer: {}", user.getStripeCustomerId(), e);
 				model.addAttribute("errorMessage", "クレジットカード情報の取得に失敗しました。");
 			}
+		} else {
+			logger.info("User is not a premium member.");
 		}
 
 		return "user/index";
