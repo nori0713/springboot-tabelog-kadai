@@ -121,9 +121,10 @@
 	                        document.getElementById('success-message').textContent = 'カード情報の更新が成功しました。';
 	                        document.getElementById('success-message').style.display = 'block';
 							
-	                        setTimeout(function() {
+	                        /*setTimeout(function() {
 	                            window.location.href = '/user'; 
 	                        }, 4000); // 4秒後にリダイレクト
+							*/
 	                    } else {
 	                        console.error('サーバーからエラー応答:', response.status);
 	                        document.getElementById('error-message').textContent = 'カード情報の更新に失敗しました。';

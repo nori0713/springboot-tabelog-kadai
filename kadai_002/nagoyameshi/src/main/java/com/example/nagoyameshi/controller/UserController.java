@@ -8,12 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +18,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.nagoyameshi.entity.User;
-import com.example.nagoyameshi.form.UserEditForm;
 import com.example.nagoyameshi.repository.UserRepository;
 import com.example.nagoyameshi.security.UserDetailsImpl;
 import com.example.nagoyameshi.service.StripeService;
@@ -48,7 +44,7 @@ public class UserController {
 	}
 
 	// ユーザー情報ページの表示
-	@GetMapping // "/user" の指定をなくして、/user でアクセスできるように
+	@GetMapping
 	public String index(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model,
 			HttpServletResponse response) {
 		logger.info("index method called");
@@ -62,77 +58,52 @@ public class UserController {
 		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
 		model.addAttribute("user", user);
 
-		// プレミアム会員であればクレジットカード情報を取得
-		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
-			try {
-				// Stripe APIを使用してクレジットカード情報を取得
+		// プレミアム会員であればクレジットカード情報を再取得して最新の情報を表示
+		try {
+			if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
 				Map<String, String> cardDetails = stripeService.getCreditCardInfo(user.getStripeCustomerId());
-
-				// 取得したカード情報が存在するか確認
-				if (cardDetails == null || cardDetails.isEmpty()) {
+				if (cardDetails == null) {
 					logger.warn("No card details found for customer: {}", user.getStripeCustomerId());
 					model.addAttribute("errorMessage", "クレジットカード情報が見つかりませんでした。");
 				} else {
 					logger.info("Retrieved card details: {}", cardDetails);
-					model.addAttribute("cardDetails", cardDetails); // 最新のカード情報をモデルに追加
+					model.addAttribute("cardDetails", cardDetails);
 				}
-			} catch (Exception e) {
-				logger.error("Error retrieving card details: ", e);
-				model.addAttribute("errorMessage", "クレジットカード情報の取得に失敗しました。");
 			}
+		} catch (Exception e) {
+			logger.error("Error retrieving card details: ", e);
+			model.addAttribute("errorMessage", "クレジットカード情報の取得に失敗しました。");
 		}
 
-		// ユーザー情報ページに遷移
 		return "user/index";
-	}
-
-	// ユーザー情報編集ページの表示
-	@GetMapping("/edit")
-	public String edit(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model) {
-		logger.info("edit method called");
-		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
-		UserEditForm userEditForm = new UserEditForm(user.getId(), user.getName(), user.getFurigana(),
-				user.getPostalCode(), user.getAddress(), user.getPhoneNumber(), user.getEmail());
-		model.addAttribute("userEditForm", userEditForm);
-		return "user/edit";
-	}
-
-	// ユーザー情報の更新
-	@PostMapping("/update")
-	public String update(@ModelAttribute @Validated UserEditForm userEditForm, BindingResult bindingResult,
-			RedirectAttributes redirectAttributes) {
-		logger.info("update method called");
-
-		// メールアドレスが変更されているか確認
-		if (userService.isEmailChanged(userEditForm) && userService.isEmailRegistered(userEditForm.getEmail())) {
-			FieldError fieldError = new FieldError(bindingResult.getObjectName(), "email", "すでに登録済みのメールアドレスです。");
-			bindingResult.addError(fieldError);
-		}
-
-		if (bindingResult.hasErrors()) {
-			return "user/edit";
-		}
-
-		userService.update(userEditForm);
-		redirectAttributes.addFlashAttribute("successMessage", "会員情報を編集しました。");
-		return "redirect:/user";
 	}
 
 	// 有料会員への登録処理
 	@PostMapping("/subscribe")
 	public String subscribeToPremium(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
-			HttpServletRequest request) {
+			HttpServletRequest request, RedirectAttributes redirectAttributes) {
 		logger.info("subscribeToPremium method called");
-		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
-		String checkoutUrl = stripeService.createSubscriptionSession(request, user.getEmail());
-		return "redirect:" + checkoutUrl;
-	}
 
-	// クレジットカード情報更新フォームの表示
-	@GetMapping("/update-card")
-	public String showUpdateCardForm(Model model) {
-		logger.info("showUpdateCardForm method called");
-		return "user/update-card";
+		try {
+			User user = userDetailsImpl.getUser();
+
+			// プレミアムアップグレード処理
+			userService.upgradeToPremium(user);
+
+			// サブスクリプションセッションを作成
+			String checkoutUrl = stripeService.createSubscriptionSession(request, user.getEmail());
+
+			if (checkoutUrl == null) {
+				redirectAttributes.addFlashAttribute("errorMessage", "サブスクリプションの作成に失敗しました。再度お試しください。");
+				return "redirect:/user";
+			}
+
+			return "redirect:" + checkoutUrl;
+		} catch (Exception e) {
+			logger.error("Subscription failed: ", e);
+			redirectAttributes.addFlashAttribute("errorMessage", "有料会員へのアップグレードに失敗しました。再度お試しください。");
+			return "redirect:/user";
+		}
 	}
 
 	// クレジットカード情報の更新
@@ -145,44 +116,67 @@ public class UserController {
 		String email = userDetailsImpl.getUser().getEmail();
 
 		try {
+			// Stripeで新しい顧客IDを取得
 			String customerId = stripeService.findOrCreateCustomerByEmail(email);
 
-			// 必要に応じて、既存のクレジットカード情報を削除
+			// usersテーブルのstripe_customer_idと一致しているか確認
+			User user = userDetailsImpl.getUser();
+			if (!customerId.equals(user.getStripeCustomerId())) {
+				// usersテーブルのstripe_customer_idを新しいcustomerIdで更新
+				user.setStripeCustomerId(customerId);
+				userRepository.save(user);
+			}
+
+			// 古い支払い方法を削除
 			stripeService.detachOldPaymentMethod(customerId);
 
 			// 新しい支払い方法を設定
 			stripeService.updateCustomerCreditCard(customerId, paymentMethodId);
 
+			// 更新後のカード情報を確認
+			Map<String, String> updatedCardDetails = stripeService.getCreditCardInfo(customerId);
+			logger.info("Updated card details after update: {}", updatedCardDetails);
+
 			response.put("status", "success");
 			response.put("message", "Customer's card updated successfully");
+
 		} catch (StripeException e) {
 			logger.error("Failed to update card for customer {}: {}", email, e);
 			response.put("status", "error");
 			response.put("message", "An error occurred while updating your card information. Please try again.");
 		}
+
 		return response;
 	}
 
-	// ユーザーの詳細情報とクレジットカード情報の取得
-	@GetMapping("/details")
-	public String getUserDetails(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model) {
-		logger.info("getUserDetails method called");
+	// 解約機能のエンドポイント
+	@PostMapping("/cancel-subscription")
+	@Transactional
+	public String cancelSubscription(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+			RedirectAttributes redirectAttributes) {
 		User user = userDetailsImpl.getUser();
-		model.addAttribute("user", user);
 
-		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
-			try {
-				Map<String, String> cardDetails = stripeService.getCreditCardInfo(user.getStripeCustomerId());
-				if (cardDetails == null || cardDetails.isEmpty()) {
-					model.addAttribute("errorMessage", "クレジットカード情報が見つかりませんでした。");
-				} else {
-					model.addAttribute("cardDetails", cardDetails);
-				}
-			} catch (Exception e) {
-				model.addAttribute("errorMessage", "クレジットカード情報の取得に失敗しました。");
-			}
+		try {
+			// クレジットカード情報を削除
+			stripeService.deleteCustomerPaymentMethods(user.getStripeCustomerId());
+
+			// 有料会員から無料会員に変更
+			userService.downgradeToFree(user);
+
+			// 解約後に新しい顧客IDを作成し、それを保存
+			String newCustomerId = stripeService.findOrCreateCustomerByEmail(user.getEmail());
+			user.setStripeCustomerId(newCustomerId);
+			userRepository.save(user);
+
+			redirectAttributes.addFlashAttribute("successMessage", "サブスクリプションを解約しました。");
+		} catch (StripeException e) {
+			redirectAttributes.addFlashAttribute("errorMessage", "クレジットカード情報の削除中にエラーが発生しました。");
+			logger.error("Error during subscription cancellation", e);
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("errorMessage", "解約処理に失敗しました。再度お試しください。");
+			logger.error("Error during subscription cancellation", e);
 		}
 
-		return "user/index";
+		return "redirect:/user";
 	}
 }

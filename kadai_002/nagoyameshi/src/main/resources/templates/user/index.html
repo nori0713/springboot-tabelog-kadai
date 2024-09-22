@@ -38,13 +38,25 @@
                             <a th:href="@{/change-password}">パスワードを変更</a>
                         </div>
 
-                        <!-- クレジットカード情報の変更リンク（有料会員のみ表示） -->
-                        <div th:if="${user.role.name == 'ROLE_PREMIUM'}" class="mb-3">
-                            <a th:href="@{/user/update-card}">クレジットカード情報を変更</a>
-                        </div>
-
-                        <!-- ユーザー情報の表示 -->
+                        <!-- 会員ステータスの表示 -->
                         <div class="container mb-4">
+                            <div class="row pb-2 mb-2 border-bottom">
+                                <div class="col-4">
+                                    <span class="fw-bold">会員ステータス</span>
+                                </div>
+                                <div class="col">
+                                    <span th:text="${user.role.name == 'ROLE_PREMIUM' ? '有料会員' : '無料会員'}"></span>
+                                </div>
+                            </div>
+
+                            <!-- 解約リンク（有料会員の場合にのみ表示） -->
+                            <div th:if="${user.role.name == 'ROLE_PREMIUM'}" class="mb-3">
+                                <form th:action="@{/user/cancel-subscription}" method="post" onsubmit="return confirm('本当に解約しますか？')">
+                                    <button type="submit" class="btn btn-danger">サブスクリプションを解約する</button>
+                                </form>
+                            </div>
+
+                            <!-- ユーザー情報の表示 -->
                             <div class="row pb-2 mb-2 border-bottom">
                                 <div class="col-4">
                                     <span class="fw-bold">氏名</span>
@@ -103,8 +115,8 @@
                             <div th:if="${user.role.name == 'ROLE_PREMIUM'}">
                                 <h3>クレジットカード情報</h3>
                                 <div th:if="${cardDetails != null}">
-                                    <p>カード番号: <span th:text="${cardDetails['number']}"></span></p>
-                                    <p>有効期限: <span th:text="${cardDetails['expiry']}"></span></p>
+                                    <p>カード番号: <span th:text="${cardDetails['last4']}"></span></p>
+                                    <p>有効期限: <span th:text="|${cardDetails['exp_month']} / ${cardDetails['exp_year']}|"></span></p>
                                 </div>
                                 <div th:if="${cardDetails == null}">
                                     <p>クレジットカード情報がありません。</p>

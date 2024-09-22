@@ -1,0 +1,181 @@
+package com.example.nagoyameshi.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.form.UserEditForm;
+import com.example.nagoyameshi.repository.UserRepository;
+import com.example.nagoyameshi.security.UserDetailsImpl;
+import com.example.nagoyameshi.service.StripeService;
+import com.example.nagoyameshi.service.UserService;
+import com.stripe.exception.StripeException;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@Controller
+@RequestMapping("/user")
+public class UserController {
+
+	private final UserRepository userRepository;
+	private final UserService userService;
+	private final StripeService stripeService;
+	private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+
+	@Autowired
+	public UserController(UserRepository userRepository, UserService userService, StripeService stripeService) {
+		this.userRepository = userRepository;
+		this.userService = userService;
+		this.stripeService = stripeService;
+	}
+
+	@GetMapping
+	public String index(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model,
+			HttpServletResponse response) {
+		response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+		response.setHeader("Pragma", "no-cache");
+		response.setDateHeader("Expires", 0);
+
+		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
+		model.addAttribute("user", user);
+
+		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
+			try {
+				Map<String, String> cardDetails = stripeService.getCreditCardInfo(user.getStripeCustomerId());
+
+				if (cardDetails == null) {
+					model.addAttribute("errorMessage", "クレジットカード情報が見つかりませんでした。");
+				} else {
+					model.addAttribute("cardDetails", cardDetails);
+				}
+			} catch (Exception e) {
+				model.addAttribute("errorMessage", "クレジットカード情報の取得に失敗しました。");
+			}
+		}
+
+		return "user/index";
+	}
+
+	@GetMapping("/edit")
+	public String edit(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl, Model model) {
+		User user = userRepository.getReferenceById(userDetailsImpl.getUser().getId());
+		UserEditForm userEditForm = new UserEditForm(user.getId(), user.getName(), user.getFurigana(),
+				user.getPostalCode(), user.getAddress(), user.getPhoneNumber(), user.getEmail());
+		model.addAttribute("userEditForm", userEditForm);
+		return "user/edit";
+	}
+
+	@PostMapping("/update")
+	public String update(@ModelAttribute @Validated UserEditForm userEditForm, BindingResult bindingResult,
+			RedirectAttributes redirectAttributes) {
+
+		if (userService.isEmailChanged(userEditForm) && userService.isEmailRegistered(userEditForm.getEmail())) {
+			FieldError fieldError = new FieldError(bindingResult.getObjectName(), "email", "すでに登録済みのメールアドレスです。");
+			bindingResult.addError(fieldError);
+		}
+
+		if (bindingResult.hasErrors()) {
+			return "user/edit";
+		}
+
+		userService.update(userEditForm);
+		redirectAttributes.addFlashAttribute("successMessage", "会員情報を編集しました。");
+		return "redirect:/user";
+	}
+
+	@PostMapping("/subscribe")
+	public String subscribeToPremium(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+			HttpServletRequest request, RedirectAttributes redirectAttributes) {
+		try {
+			User user = userDetailsImpl.getUser();
+			userService.upgradeToPremium(user);
+
+			String checkoutUrl = stripeService.createSubscriptionSession(request, user.getEmail());
+
+			if (checkoutUrl == null) {
+				redirectAttributes.addFlashAttribute("errorMessage", "サブスクリプションの作成に失敗しました。再度お試しください。");
+				return "redirect:/user";
+			}
+
+			return "redirect:" + checkoutUrl;
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("errorMessage", "有料会員へのアップグレードに失敗しました。再度お試しください。");
+			return "redirect:/user";
+		}
+	}
+
+	@GetMapping("/update-card")
+	public String showUpdateCardForm(Model model) {
+		return "user/update-card";
+	}
+
+	@PostMapping("/update-card")
+	@ResponseBody
+	public Map<String, Object> updateCard(@RequestBody Map<String, Object> payload,
+			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+		Map<String, Object> response = new HashMap<>();
+		String paymentMethodId = (String) payload.get("paymentMethodId");
+		String email = userDetailsImpl.getUser().getEmail();
+
+		try {
+			String customerId = stripeService.findOrCreateCustomerByEmail(email);
+
+			User user = userDetailsImpl.getUser();
+			if (!customerId.equals(user.getStripeCustomerId())) {
+				user.setStripeCustomerId(customerId);
+				userRepository.save(user);
+			}
+
+			stripeService.detachOldPaymentMethod(customerId);
+			stripeService.updateCustomerCreditCard(customerId, paymentMethodId);
+
+			Map<String, String> updatedCardDetails = stripeService.getCreditCardInfo(customerId);
+			response.put("status", "success");
+			response.put("message", "Customer's card updated successfully");
+
+		} catch (StripeException e) {
+			response.put("status", "error");
+			response.put("message", "An error occurred while updating your card information. Please try again.");
+		}
+
+		return response;
+	}
+
+	@PostMapping("/cancel-subscription")
+	@Transactional
+	public String cancelSubscription(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+			RedirectAttributes redirectAttributes) {
+		User user = userDetailsImpl.getUser();
+
+		try {
+			stripeService.deleteCustomerPaymentMethods(user.getStripeCustomerId());
+			userService.downgradeToFree(user);
+			redirectAttributes.addFlashAttribute("successMessage", "サブスクリプションを解約しました。");
+		} catch (StripeException e) {
+			redirectAttributes.addFlashAttribute("errorMessage", "クレジットカード情報の削除中にエラーが発生しました。");
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("errorMessage", "解約処理に失敗しました。再度お試しください。");
+		}
+
+		return "redirect:/user";
+	}
+}
