@@ -1,0 +1,201 @@
+package com.example.nagoyameshi.service;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.example.nagoyameshi.entity.Role;
+import com.example.nagoyameshi.entity.User;
+import com.example.nagoyameshi.form.SignupForm;
+import com.example.nagoyameshi.form.UserEditForm;
+import com.example.nagoyameshi.repository.RoleRepository;
+import com.example.nagoyameshi.repository.UserRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
+
+@Service
+public class UserService {
+	private final UserRepository userRepository;
+	private final RoleRepository roleRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final StripeService stripeService;
+
+	public UserService(UserRepository userRepository, RoleRepository roleRepository,
+			PasswordEncoder passwordEncoder, StripeService stripeService) {
+		this.userRepository = userRepository;
+		this.roleRepository = roleRepository;
+		this.passwordEncoder = passwordEncoder;
+		this.stripeService = stripeService;
+	}
+
+	@Transactional
+	public User create(SignupForm signupForm) {
+		User user = new User();
+		Role role;
+
+		if (signupForm.isPremiumSelected()) {
+			role = roleRepository.findByName("ROLE_PREMIUM");
+			if (role == null) {
+				throw new IllegalArgumentException("Role not found: ROLE_PREMIUM");
+			}
+			user.setSubscriptionStatus("INACTIVE");
+		} else {
+			role = roleRepository.findByName("ROLE_FREE");
+			if (role == null) {
+				throw new IllegalArgumentException("Role not found: ROLE_FREE");
+			}
+			user.setSubscriptionStatus("INACTIVE");
+		}
+
+		user.setName(signupForm.getName());
+		user.setFurigana(signupForm.getFurigana());
+		user.setPostalCode(signupForm.getPostalCode());
+		user.setAddress(signupForm.getAddress());
+		user.setPhoneNumber(signupForm.getPhoneNumber());
+		user.setEmail(signupForm.getEmail());
+		user.setPassword(passwordEncoder.encode(signupForm.getPassword()));
+		user.setRole(role);
+		user.setEnabled(false);
+
+		// Stripe 顧客を作成
+		try {
+			String stripeCustomerId = stripeService.findOrCreateCustomerByEmail(user.getEmail());
+			user.setStripeCustomerId(stripeCustomerId); // Stripe 顧客 ID を保存
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to create Stripe customer.", e);
+		}
+
+		return userRepository.save(user);
+	}
+
+	public String createSubscriptionSession(HttpServletRequest request, String userEmail) {
+		return stripeService.createSubscriptionSession(request, userEmail);
+	}
+
+	@Transactional
+	public void update(UserEditForm userEditForm) {
+		User user = userRepository.getReferenceById(userEditForm.getId());
+
+		user.setName(userEditForm.getName());
+		user.setFurigana(userEditForm.getFurigana());
+		user.setPostalCode(userEditForm.getPostalCode());
+		user.setAddress(userEditForm.getAddress());
+		user.setPhoneNumber(userEditForm.getPhoneNumber());
+		user.setEmail(userEditForm.getEmail());
+
+		userRepository.save(user);
+	}
+
+	public boolean isEmailRegistered(String email) {
+		User user = userRepository.findByEmail(email);
+		return user != null;
+	}
+
+	public boolean isSamePassword(String password, String passwordConfirmation) {
+		return password.equals(passwordConfirmation);
+	}
+
+	@Transactional
+	public void enableUser(User user) {
+		user.setEnabled(true);
+		userRepository.save(user);
+	}
+
+	public boolean isEmailChanged(UserEditForm userEditForm) {
+		User currentUser = userRepository.getReferenceById(userEditForm.getId());
+		return !userEditForm.getEmail().equals(currentUser.getEmail());
+	}
+
+	@Transactional
+	public void assignRole(User user, String roleName) {
+		Role role = roleRepository.findByName(roleName);
+		if (role != null) {
+			user.setRole(role);
+		} else {
+			throw new IllegalArgumentException("Role not found: " + roleName);
+		}
+		userRepository.save(user);
+	}
+
+	@Transactional
+	public void upgradeToPremium(User user) {
+		Role premiumRole = roleRepository.findByName("ROLE_PREMIUM");
+		if (premiumRole != null) {
+			// すでにプレミアム会員であるかどうかを確認
+			if (!"ROLE_PREMIUM".equals(user.getRole().getName())) {
+				user.setRole(premiumRole);
+			}
+			// サブスクリプションステータスをACTIVEに更新
+			user.setSubscriptionStatus("ACTIVE");
+			userRepository.save(user);
+		} else {
+			throw new IllegalArgumentException("Role not found: ROLE_PREMIUM");
+		}
+	}
+
+	@Transactional
+	public String handlePostVerification(User user, HttpServletRequest request) {
+		if ("ROLE_PREMIUM".equals(user.getRole().getName())) {
+			return "redirect:" + createSubscriptionSession(request, user.getEmail());
+		} else {
+			enableUser(user);
+			user.setSubscriptionStatus("ACTIVE");
+			userRepository.save(user);
+			return "redirect:/login";
+		}
+	}
+
+	// 現在のパスワードが正しいか確認
+	public boolean isCurrentPasswordValid(Integer userId, String currentPassword) {
+		User user = userRepository.findById(userId).orElse(null);
+		if (user == null) {
+			return false;
+		}
+		return passwordEncoder.matches(currentPassword, user.getPassword());
+	}
+
+	// パスワードの更新
+	@Transactional
+	public void updatePassword(Integer userId, String newPassword) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User not found"));
+		user.setPassword(passwordEncoder.encode(newPassword));
+		userRepository.save(user);
+	}
+
+	// クレジットカード情報の更新
+	@Transactional
+	public void updateCreditCard(String customerId, String paymentMethodId) {
+		try {
+			stripeService.updateCustomerCreditCard(customerId, paymentMethodId);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to update credit card information.", e);
+		}
+	}
+
+	@Transactional
+	public void updateCreditCard(Integer userId, String paymentMethodId) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+		// Stripe APIでクレジットカード情報を更新（Stripeの顧客にPaymentMethodを追加）
+		try {
+			stripeService.attachPaymentMethodToCustomer(user.getEmail(), paymentMethodId);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to update credit card: " + e.getMessage());
+		}
+	}
+
+	// 有料会員から無料会員に変更するメソッド
+	@Transactional
+	public void downgradeToFree(User user) {
+		Role freeRole = roleRepository.findByName("ROLE_FREE");
+		if (freeRole != null) {
+			user.setRole(freeRole);
+			user.setSubscriptionStatus("INACTIVE");
+			userRepository.save(user);
+		} else {
+			throw new IllegalArgumentException("Role not found: ROLE_FREE");
+		}
+	}
+}

@@ -1,5 +1,7 @@
 package com.example.nagoyameshi.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -9,12 +11,17 @@ import com.example.nagoyameshi.form.SignupForm;
 import com.example.nagoyameshi.form.UserEditForm;
 import com.example.nagoyameshi.repository.RoleRepository;
 import com.example.nagoyameshi.repository.UserRepository;
+import com.stripe.exception.StripeException;
+import com.stripe.model.Subscription;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 
 @Service
 public class UserService {
+
+	private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
 	private final UserRepository userRepository;
 	private final RoleRepository roleRepository;
 	private final PasswordEncoder passwordEncoder;
@@ -62,13 +69,38 @@ public class UserService {
 			String stripeCustomerId = stripeService.findOrCreateCustomerByEmail(user.getEmail());
 			user.setStripeCustomerId(stripeCustomerId); // Stripe 顧客 ID を保存
 		} catch (Exception e) {
+			logger.error("Failed to create Stripe customer.", e);
 			throw new RuntimeException("Failed to create Stripe customer.", e);
 		}
 
 		return userRepository.save(user);
 	}
 
+	@Transactional
 	public String createSubscriptionSession(HttpServletRequest request, String userEmail) {
+		String customerId;
+		try {
+			// 新しい顧客IDを取得
+			customerId = stripeService.findOrCreateCustomerByEmail(userEmail);
+		} catch (StripeException e) {
+			// Stripeの顧客作成・取得に失敗した場合の処理
+			logger.error("Failed to find or create Stripe customer: {}", e.getMessage(), e);
+			throw new RuntimeException("Failed to find or create Stripe customer", e);
+		}
+
+		// ユーザーのレコードを取得
+		User user = userRepository.findByEmail(userEmail);
+		if (user == null) {
+			// ユーザーが存在しない場合のエラーハンドリング
+			logger.error("User with email {} not found", userEmail);
+			throw new RuntimeException("User not found with email: " + userEmail);
+		}
+
+		// 顧客IDをユーザーテーブルに保存
+		user.setStripeCustomerId(customerId);
+		userRepository.save(user); // 最新の顧客IDで更新
+
+		// Stripeのセッションを作成して返す
 		return stripeService.createSubscriptionSession(request, userEmail);
 	}
 
@@ -165,15 +197,6 @@ public class UserService {
 
 	// クレジットカード情報の更新
 	@Transactional
-	public void updateCreditCard(String customerId, String paymentMethodId) {
-		try {
-			stripeService.updateCustomerCreditCard(customerId, paymentMethodId);
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to update credit card information.", e);
-		}
-	}
-
-	@Transactional
 	public void updateCreditCard(Integer userId, String paymentMethodId) {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -182,6 +205,7 @@ public class UserService {
 		try {
 			stripeService.attachPaymentMethodToCustomer(user.getEmail(), paymentMethodId);
 		} catch (Exception e) {
+			logger.error("Failed to update credit card: {}", e.getMessage(), e);
 			throw new RuntimeException("Failed to update credit card: " + e.getMessage());
 		}
 	}
@@ -196,6 +220,29 @@ public class UserService {
 			userRepository.save(user);
 		} else {
 			throw new IllegalArgumentException("Role not found: ROLE_FREE");
+		}
+	}
+
+	// サブスクリプションのキャンセルメソッド
+	@Transactional
+	public void cancelSubscription(String email) {
+		try {
+			// メールアドレスで顧客を取得
+			String customerId = stripeService.findOrCreateCustomerByEmail(email);
+
+			// 顧客のサブスクリプションをキャンセル
+			Subscription subscription = stripeService.findActiveSubscription(customerId);
+			if (subscription != null) {
+				subscription.cancel();
+			}
+
+			// 顧客IDをSQLから削除
+			User user = userRepository.findByEmail(email);
+			user.setStripeCustomerId(null); // 顧客IDをリセット
+			userRepository.save(user);
+		} catch (StripeException e) {
+			logger.error("Failed to cancel subscription for customer: {}", email, e);
+			throw new RuntimeException("Failed to cancel subscription", e);
 		}
 	}
 }

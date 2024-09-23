@@ -87,8 +87,15 @@ public class UserController {
 		try {
 			User user = userDetailsImpl.getUser();
 
-			// プレミアムアップグレード処理
-			userService.upgradeToPremium(user);
+			// Stripeで新しい顧客IDを取得
+			String customerId = stripeService.findOrCreateCustomerByEmail(user.getEmail());
+
+			// 顧客IDが異なる場合はSQLのIDを更新する
+			if (!customerId.equals(user.getStripeCustomerId())) {
+				user.setStripeCustomerId(customerId); // 新しい顧客IDをセット
+				userRepository.save(user); // SQLに保存
+				logger.info("Updated user StripeCustomerId in SQL: {}", customerId);
+			}
 
 			// サブスクリプションセッションを作成
 			String checkoutUrl = stripeService.createSubscriptionSession(request, user.getEmail());
@@ -163,10 +170,13 @@ public class UserController {
 			// 有料会員から無料会員に変更
 			userService.downgradeToFree(user);
 
-			// 解約後に新しい顧客IDを作成し、それを保存
+			// 新しい顧客IDを作成し、SQLに保存する
 			String newCustomerId = stripeService.findOrCreateCustomerByEmail(user.getEmail());
-			user.setStripeCustomerId(newCustomerId);
-			userRepository.save(user);
+			if (!newCustomerId.equals(user.getStripeCustomerId())) {
+				user.setStripeCustomerId(newCustomerId); // 新しい顧客IDをセット
+				userRepository.save(user); // SQLに保存
+				logger.info("Updated user StripeCustomerId after cancellation: {}", newCustomerId);
+			}
 
 			redirectAttributes.addFlashAttribute("successMessage", "サブスクリプションを解約しました。");
 		} catch (StripeException e) {

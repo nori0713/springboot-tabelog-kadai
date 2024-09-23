@@ -14,6 +14,8 @@ import com.stripe.model.Customer;
 import com.stripe.model.CustomerCollection;
 import com.stripe.model.PaymentMethod;
 import com.stripe.model.PaymentMethodCollection;
+import com.stripe.model.Subscription;
+import com.stripe.model.SubscriptionCollection;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.CustomerListParams;
@@ -21,6 +23,7 @@ import com.stripe.param.CustomerUpdateParams;
 import com.stripe.param.PaymentMethodAttachParams;
 import com.stripe.param.PaymentMethodDetachParams;
 import com.stripe.param.PaymentMethodListParams;
+import com.stripe.param.SubscriptionListParams;
 import com.stripe.param.checkout.SessionCreateParams;
 
 import jakarta.annotation.PostConstruct;
@@ -59,7 +62,8 @@ public class StripeService {
 			throw new IllegalStateException("Base URL cannot be determined.");
 		}
 
-		SessionCreateParams params = SessionCreateParams.builder()
+		// セッション作成用のパラメータを設定
+		SessionCreateParams.Builder paramsBuilder = SessionCreateParams.builder()
 				.addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
 				.addLineItem(SessionCreateParams.LineItem.builder()
 						.setPrice(stripePriceId)
@@ -67,13 +71,17 @@ public class StripeService {
 						.build())
 				.setMode(SessionCreateParams.Mode.SUBSCRIPTION)
 				.setSuccessUrl(baseUrl + "/subscription/success")
-				.setCancelUrl(baseUrl + "/subscription/cancel")
-				.setCustomerEmail(userEmail)
-				.setCustomer(customerId)
-				.build();
+				.setCancelUrl(baseUrl + "/subscription/cancel");
+
+		// 顧客IDが存在する場合はcustomerを、存在しない場合はcustomer_emailを設定
+		if (customerId != null) {
+			paramsBuilder.setCustomer(customerId);
+		} else {
+			paramsBuilder.setCustomerEmail(userEmail);
+		}
 
 		try {
-			Session session = Session.create(params);
+			Session session = Session.create(paramsBuilder.build());
 			logger.info("Created subscription session: {}", session.getId());
 			return session.getUrl();
 		} catch (StripeException e) {
@@ -231,5 +239,20 @@ public class StripeService {
 		paymentMethod.attach(attachParams);
 
 		logger.info("Attached payment method {} to customer {}", paymentMethodId, customerId);
+	}
+
+	// アクティブなサブスクリプションを取得するメソッドを追加
+	public Subscription findActiveSubscription(String customerId) throws StripeException {
+		SubscriptionListParams params = SubscriptionListParams.builder()
+				.setCustomer(customerId)
+				.setStatus(SubscriptionListParams.Status.ACTIVE)
+				.build();
+
+		SubscriptionCollection subscriptions = Subscription.list(params);
+
+		if (!subscriptions.getData().isEmpty()) {
+			return subscriptions.getData().get(0); // 最初のアクティブなサブスクリプションを返す
+		}
+		return null;
 	}
 }

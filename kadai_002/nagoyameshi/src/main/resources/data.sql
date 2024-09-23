@@ -39,9 +39,9 @@ COMMIT;
 --ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR(255);
 
 -- プレミアム会員のStripe顧客IDを設定
-UPDATE users 
-SET stripe_customer_id = 'cus_premium_member_12345' 
-WHERE email = 'premium@example.com';
+--UPDATE users 
+--SET stripe_customer_id = 'cus_premium_member_12345' 
+--WHERE email = 'premium@example.com';
 
 --トークン有効期限カラムの追加
 --ALTER TABLE verification_tokens
