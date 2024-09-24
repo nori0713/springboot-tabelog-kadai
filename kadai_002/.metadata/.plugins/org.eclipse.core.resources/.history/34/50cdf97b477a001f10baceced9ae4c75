@@ -40,8 +40,8 @@
                                 <tbody>                                                     
                                     <tr th:each="reservation : ${reservationPage}">
                                         <td th:text="${reservation.getId()}"></td>
-                                        <td th:text="${reservation.getUser() != null ? reservation.getUser().getName() : '未登録'}"></td> <!-- nullチェック -->
-                                        <td th:text="${reservation.getRestaurant() != null ? reservation.getRestaurant().getName() : '未登録'}"></td> <!-- nullチェック -->
+                                        <td th:text="${reservation.getUser().getName()}"></td>
+                                        <td th:text="${reservation.getRestaurant().getName()}"></td>
                                         <td th:text="${reservation.getReservationDate()}"></td>
                                         <td th:text="${#temporals.format(reservation.getReservationTime(), 'HH:mm')}"></td> <!-- 予約時間を表示 -->
                                         <td th:text="${reservation.getNumberOfPeople()}"></td>                                                                              

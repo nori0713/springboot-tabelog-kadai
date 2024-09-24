@@ -3,7 +3,7 @@
     <head>
         <div th:replace="~{fragment :: meta}"></div>   
         <div th:replace="~{fragment :: styles}"></div>
-        <title>予約一覧</title>   
+        <title>レビュー一覧</title>   
     </head>
     <body>
         <div class="nagoyameshi-wrapper">
@@ -15,10 +15,10 @@
                     <div class="row justify-content-center">
                         <div class="col-xxl-9 col-xl-10 col-lg-11">
                             
-                            <h1 class="mb-4 text-center">予約一覧</h1>   
+                            <h1 class="mb-4 text-center">レビュー一覧</h1>   
                             
                             <div class="d-flex justify-content-between align-items-end">
-                                <form method="get" th:action="@{/admin/reservations}" class="mb-3">
+                                <form method="get" th:action="@{/admin/reviews}" class="mb-3">
                                     <div class="input-group">
                                         <input type="text" class="form-control" name="keyword" th:value="${keyword}" placeholder="レストラン名・ユーザー名で検索">
                                         <button type="submit" class="btn text-white shadow-sm nagoyameshi-btn">検索</button> 
@@ -32,38 +32,36 @@
                                         <th scope="col">ID</th>
                                         <th scope="col">ユーザー名</th>
                                         <th scope="col">レストラン名</th>
-                                        <th scope="col">予約日</th>
-                                        <th scope="col">予約時間</th> <!-- 予約時間の列を追加 -->
-                                        <th scope="col">人数</th>
+                                        <th scope="col">スコア</th>
+                                        <th scope="col">レビュー内容</th>
                                     </tr>
                                 </thead>   
                                 <tbody>                                                     
-                                    <tr th:each="reservation : ${reservationPage}">
-                                        <td th:text="${reservation.getId()}"></td>
-                                        <td th:text="${reservation.getUser() != null ? reservation.getUser().getName() : '未登録'}"></td> <!-- nullチェック -->
-                                        <td th:text="${reservation.getRestaurant() != null ? reservation.getRestaurant().getName() : '未登録'}"></td> <!-- nullチェック -->
-                                        <td th:text="${reservation.getReservationDate()}"></td>
-                                        <td th:text="${#temporals.format(reservation.getReservationTime(), 'HH:mm')}"></td> <!-- 予約時間を表示 -->
-                                        <td th:text="${reservation.getNumberOfPeople()}"></td>                                                                              
+                                    <tr th:each="review : ${reviewPage}">
+                                        <td th:text="${review.getId()}"></td>
+                                        <td th:text="${review.getUser().getName()}"></td>
+                                        <td th:text="${review.getRestaurant().getName()}"></td>
+                                        <td th:text="${review.getScore()}"></td>
+                                        <td th:text="${review.getContent()}"></td>                                                                              
                                     </tr>                                      
                                 </tbody>
                             </table>  
                             
                             <!-- ページネーション -->
-                            <div th:if="${reservationPage.getTotalPages() > 1}" class="d-flex justify-content-center">
-                                <nav aria-label="予約一覧ページ">
+                            <div th:if="${reviewPage.getTotalPages() > 1}" class="d-flex justify-content-center">
+                                <nav aria-label="レビュー一覧ページ">
                                     <ul class="pagination">
                                         <li class="page-item">
-                                            <span th:if="${reservationPage.isFirst()}" class="page-link disabled">前</span>
-                                            <a th:unless="${reservationPage.isFirst()}" th:href="@{/admin/reservations(page = ${reservationPage.getNumber() - 1}, keyword = ${keyword})}" class="page-link nagoyameshi-page-link">前</a>
+                                            <span th:if="${reviewPage.isFirst()}" class="page-link disabled">前</span>
+                                            <a th:unless="${reviewPage.isFirst()}" th:href="@{/admin/reviews(page = ${reviewPage.getNumber() - 1}, keyword = ${keyword})}" class="page-link nagoyameshi-page-link">前</a>
                                         </li>
-                                        <li th:each="i : ${#numbers.sequence(0, reservationPage.getTotalPages() - 1)}" class="page-item">
-                                            <span th:if="${i == reservationPage.getNumber()}" class="page-link active nagoyameshi-active" th:text="${i + 1}"></span>
-                                            <a th:unless="${i == reservationPage.getNumber()}" th:href="@{/admin/reservations(page = ${i}, keyword = ${keyword})}" class="page-link nagoyameshi-page-link" th:text="${i + 1}"></a>
+                                        <li th:each="i : ${#numbers.sequence(0, reviewPage.getTotalPages() - 1)}" class="page-item">
+                                            <span th:if="${i == reviewPage.getNumber()}" class="page-link active nagoyameshi-active" th:text="${i + 1}"></span>
+                                            <a th:unless="${i == reviewPage.getNumber()}" th:href="@{/admin/reviews(page = ${i}, keyword = ${keyword})}" class="page-link nagoyameshi-page-link" th:text="${i + 1}"></a>
                                         </li>
                                         <li class="page-item">                        
-                                            <span th:if="${reservationPage.isLast()}" class="page-link disabled">次</span>
-                                            <a th:unless="${reservationPage.isLast()}" th:href="@{/admin/reservations(page = ${reservationPage.getNumber() + 1}, keyword = ${keyword})}" class="page-link nagoyameshi-page-link">次</a>
+                                            <span th:if="${reviewPage.isLast()}" class="page-link disabled">次</span>
+                                            <a th:unless="${reviewPage.isLast()}" th:href="@{/admin/reviews(page = ${reviewPage.getNumber() + 1}, keyword = ${keyword})}" class="page-link nagoyameshi-page-link">次</a>
                                         </li>
                                     </ul>
                                 </nav> 
