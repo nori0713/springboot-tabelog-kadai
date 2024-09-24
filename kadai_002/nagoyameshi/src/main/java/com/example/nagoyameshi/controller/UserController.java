@@ -27,6 +27,7 @@ import com.example.nagoyameshi.security.UserDetailsImpl;
 import com.example.nagoyameshi.service.StripeService;
 import com.example.nagoyameshi.service.UserService;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Subscription;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -186,6 +187,83 @@ public class UserController {
 		}
 
 		return response;
+	}
+
+	// サブスクリプション開始のエンドポイント
+	@PostMapping("/subscribe")
+	public String createCheckoutSession(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+			RedirectAttributes redirectAttributes, HttpServletRequest request) {
+		if (userDetailsImpl == null) {
+			redirectAttributes.addFlashAttribute("errorMessage", "ログインが必要です。");
+			return "redirect:/login";
+		}
+
+		User user = userDetailsImpl.getUser();
+
+		try {
+			// Stripe Checkoutセッションを作成
+			String sessionUrl = stripeService.createSubscriptionSession(request, user.getEmail());
+
+			if (sessionUrl == null) {
+				redirectAttributes.addFlashAttribute("errorMessage", "決済セッションの作成に失敗しました。もう一度お試しください。");
+				return "redirect:/user";
+			}
+
+			// 成功した場合、Stripeの決済ページにリダイレクト
+			return "redirect:" + sessionUrl;
+
+		} catch (Exception e) {
+			logger.error("Error creating Stripe checkout session: ", e);
+			redirectAttributes.addFlashAttribute("errorMessage", "決済処理中にエラーが発生しました。もう一度お試しください。");
+			return "redirect:/user";
+		}
+	}
+
+	// Stripe決済成功後の処理
+	@GetMapping("/subscription/success")
+	public String subscriptionSuccess(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
+			RedirectAttributes redirectAttributes) {
+		if (userDetailsImpl == null) {
+			redirectAttributes.addFlashAttribute("errorMessage", "ログインが必要です。");
+			return "redirect:/login";
+		}
+
+		User user = userDetailsImpl.getUser();
+
+		try {
+			// 既存のアクティブなサブスクリプションを取得
+			Subscription activeSubscription = stripeService.findActiveSubscription(user.getStripeCustomerId());
+
+			if (activeSubscription != null && "active".equals(activeSubscription.getStatus())) {
+				logger.info("Subscription active for user {}", user.getEmail());
+
+				// サブスクリプションがアクティブであれば、有料会員にアップグレード
+				userService.processSubscriptionSuccess(user);
+
+				redirectAttributes.addFlashAttribute("successMessage", "サブスクリプションが正常にアクティブ化され、有料会員になりました。");
+			} else {
+				logger.warn("Subscription is not active for user {}. Status: {}", user.getEmail(),
+						activeSubscription != null ? activeSubscription.getStatus() : "null");
+				redirectAttributes.addFlashAttribute("errorMessage", "サブスクリプションがアクティブではありません。");
+			}
+			return "redirect:/user";
+
+		} catch (StripeException e) {
+			logger.error("Stripeサブスクリプション処理中にエラーが発生しました: ", e);
+			redirectAttributes.addFlashAttribute("errorMessage", "サブスクリプション処理中にStripeエラーが発生しました。");
+			return "redirect:/user";
+		} catch (Exception e) {
+			logger.error("サブスクリプション処理中に予期しないエラーが発生しました: ", e);
+			redirectAttributes.addFlashAttribute("errorMessage", "サブスクリプション処理中に予期しないエラーが発生しました。");
+			return "redirect:/user";
+		}
+	}
+
+	// Stripe決済キャンセル後の処理
+	@GetMapping("/subscription/cancel")
+	public String subscriptionCancel(RedirectAttributes redirectAttributes) {
+		redirectAttributes.addFlashAttribute("errorMessage", "サブスクリプションの作成がキャンセルされました。");
+		return "redirect:/user";
 	}
 
 	// 解約機能のエンドポイント

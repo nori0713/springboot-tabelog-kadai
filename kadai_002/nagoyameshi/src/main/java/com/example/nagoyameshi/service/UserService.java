@@ -45,13 +45,13 @@ public class UserService {
 			if (role == null) {
 				throw new IllegalArgumentException("Role not found: ROLE_PREMIUM");
 			}
-			user.setSubscriptionStatus("INACTIVE");
+			user.setSubscriptionStatus("INACTIVE"); // サブスクが完了するまでINACTIVE
 		} else {
 			role = roleRepository.findByName("ROLE_FREE");
 			if (role == null) {
 				throw new IllegalArgumentException("Role not found: ROLE_FREE");
 			}
-			user.setSubscriptionStatus("INACTIVE");
+			user.setSubscriptionStatus("INACTIVE"); // 無料会員はINACTIVE
 		}
 
 		user.setName(signupForm.getName());
@@ -156,20 +156,33 @@ public class UserService {
 		userRepository.save(user);
 	}
 
+	// サブスクリプション成功時の処理
 	@Transactional
-	public void upgradeToPremium(User user) {
+	public void processSubscriptionSuccess(User user) {
+		logger.info("Processing subscription success for user: {}", user.getEmail());
+
 		Role premiumRole = roleRepository.findByName("ROLE_PREMIUM");
-		if (premiumRole != null) {
-			// すでにプレミアム会員であるかどうかを確認
-			if (!"ROLE_PREMIUM".equals(user.getRole().getName())) {
-				user.setRole(premiumRole);
-			}
-			// サブスクリプションステータスをACTIVEに更新
-			user.setSubscriptionStatus("ACTIVE");
-			userRepository.save(user);
-		} else {
+
+		if (premiumRole == null) {
+			logger.error("Role not found: ROLE_PREMIUM");
 			throw new IllegalArgumentException("Role not found: ROLE_PREMIUM");
 		}
+
+		// ロールがプレミアムに設定されるか確認
+		if (!"ROLE_PREMIUM".equals(user.getRole().getName())) {
+			logger.info("Upgrading user {} to premium role", user.getEmail());
+			user.setRole(premiumRole); // プレミアム会員に変更
+		} else {
+			logger.info("User {} is already a premium member", user.getEmail());
+		}
+
+		// サブスクリプションステータスをACTIVEに更新
+		user.setSubscriptionStatus("ACTIVE");
+		logger.info("Setting subscription status to ACTIVE for user {}", user.getEmail());
+
+		// データベースに保存
+		userRepository.save(user);
+		logger.info("User {} updated and saved in the database", user.getEmail());
 	}
 
 	@Transactional

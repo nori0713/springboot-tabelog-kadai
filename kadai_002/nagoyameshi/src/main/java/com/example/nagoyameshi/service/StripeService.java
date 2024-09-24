@@ -23,6 +23,7 @@ import com.stripe.param.CustomerUpdateParams;
 import com.stripe.param.PaymentMethodAttachParams;
 import com.stripe.param.PaymentMethodDetachParams;
 import com.stripe.param.PaymentMethodListParams;
+import com.stripe.param.SubscriptionCreateParams;
 import com.stripe.param.SubscriptionListParams;
 import com.stripe.param.checkout.SessionCreateParams;
 
@@ -44,6 +45,27 @@ public class StripeService {
 	public void init() {
 		Stripe.apiKey = stripeApiKey;
 		logger.info("Stripe API initialized with key: {}", stripeApiKey);
+	}
+
+	// サブスクリプション作成メソッドの追加
+	public Subscription createSubscription(String customerId) throws StripeException {
+		logger.info("Creating subscription for customer: {}", customerId);
+
+		// サブスクリプション作成のためのパラメータ設定
+		SubscriptionCreateParams params = SubscriptionCreateParams.builder()
+				.setCustomer(customerId)
+				.addItem(
+						SubscriptionCreateParams.Item.builder()
+								.setPrice(stripePriceId)
+								.build())
+				.setPaymentBehavior(SubscriptionCreateParams.PaymentBehavior.DEFAULT_INCOMPLETE) // 支払いの設定
+				.build();
+
+		// Stripeでサブスクリプションを作成
+		Subscription subscription = Subscription.create(params);
+
+		logger.info("Created subscription: {}", subscription.getId());
+		return subscription;
 	}
 
 	// サブスクリプション用のセッションを作成
@@ -70,8 +92,8 @@ public class StripeService {
 						.setQuantity(1L)
 						.build())
 				.setMode(SessionCreateParams.Mode.SUBSCRIPTION)
-				.setSuccessUrl(baseUrl + "/subscription/success")
-				.setCancelUrl(baseUrl + "/subscription/cancel");
+				.setSuccessUrl(baseUrl + "/subscription/success") // 成功時リダイレクト
+				.setCancelUrl(baseUrl + "/subscription/cancel"); // キャンセル時リダイレクト
 
 		// 顧客IDが存在する場合はcustomerを、存在しない場合はcustomer_emailを設定
 		if (customerId != null) {
