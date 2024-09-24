@@ -4,6 +4,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -29,6 +31,8 @@ import com.example.nagoyameshi.service.FavoriteService;
 
 @Controller
 public class RestaurantController {
+
+	private static final Logger logger = LoggerFactory.getLogger(RestaurantController.class); // ロガーの定義
 
 	private final RestaurantRepository restaurantRepository;
 	private final ReviewRepository reviewRepository;
@@ -129,6 +133,14 @@ public class RestaurantController {
 		List<Review> reviews = reviewRepository.findAllByRestaurantOrderByCreatedAtDesc(restaurant);
 		model.addAttribute("reviews", reviews);
 
+		// レビューのユーザー情報チェック
+		reviews.forEach(review -> {
+			if (review.getUser() == null) {
+				// ユーザーがnullの場合の処理
+				logger.warn("Review does not have an associated user. Review ID: " + review.getId());
+			}
+		});
+
 		// ログインユーザーの確認とお気に入り状態の取得
 		User user = (userDetailsImpl != null) ? userDetailsImpl.getUser() : null;
 		boolean isFavorite = (user != null) && favoriteService.isFavorite(restaurant, user);
@@ -136,7 +148,8 @@ public class RestaurantController {
 
 		// 既にレビューを投稿済みか確認
 		if (user != null) {
-			boolean hasReviewed = reviews.stream().anyMatch(review -> review.getUser().getId().equals(user.getId()));
+			boolean hasReviewed = reviews.stream()
+					.anyMatch(review -> review.getUser() != null && review.getUser().getId().equals(user.getId()));
 			model.addAttribute("hasReviewed", hasReviewed);
 		} else {
 			model.addAttribute("hasReviewed", false);

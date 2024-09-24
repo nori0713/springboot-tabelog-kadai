@@ -53,7 +53,7 @@ COMMIT;
 --ADD COLUMN reset_token_expiration TIMESTAMP;
 
 -- カラム追加 --
--- ALTER TABLE users
+--ALTER TABLE users
 --ADD COLUMN subscription_status VARCHAR(50) NOT NULL DEFAULT 'INACTIVE';
 
 -- 営業時間カラムの追加
