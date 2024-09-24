@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -78,6 +79,12 @@ public class UserController {
 		return "user/index";
 	}
 
+	// クレジットカード情報変更ページの表示（GETリクエスト用）
+	@GetMapping("/update-card")
+	public String showUpdateCardForm(Model model) {
+		return "user/update-card"; // クレジットカード情報変更ページのテンプレート名
+	}
+
 	// 有料会員への登録処理
 	@PostMapping("/subscribe")
 	public String subscribeToPremium(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
@@ -93,9 +100,12 @@ public class UserController {
 			// 顧客IDが異なる場合はSQLのIDを更新する
 			if (!customerId.equals(user.getStripeCustomerId())) {
 				user.setStripeCustomerId(customerId); // 新しい顧客IDをセット
-				userRepository.save(user); // SQLに保存
+				userService.saveUser(user); // SQLに保存
 				logger.info("Updated user StripeCustomerId in SQL: {}", customerId);
 			}
+
+			// プレミアム会員にアップグレード
+			userService.upgradeToPremium(user);
 
 			// サブスクリプションセッションを作成
 			String checkoutUrl = stripeService.createSubscriptionSession(request, user.getEmail());
@@ -106,6 +116,7 @@ public class UserController {
 			}
 
 			return "redirect:" + checkoutUrl;
+
 		} catch (Exception e) {
 			logger.error("Subscription failed: ", e);
 			redirectAttributes.addFlashAttribute("errorMessage", "有料会員へのアップグレードに失敗しました。再度お試しください。");
@@ -113,7 +124,7 @@ public class UserController {
 		}
 	}
 
-	// クレジットカード情報の更新
+	// クレジットカード情報の更新（POSTリクエスト用）
 	@PostMapping("/update-card")
 	@ResponseBody
 	public Map<String, Object> updateCard(@RequestBody Map<String, Object> payload,
@@ -126,10 +137,9 @@ public class UserController {
 			// Stripeで新しい顧客IDを取得
 			String customerId = stripeService.findOrCreateCustomerByEmail(email);
 
-			// usersテーブルのstripe_customer_idと一致しているか確認
+			// ユーザー情報の更新
 			User user = userDetailsImpl.getUser();
 			if (!customerId.equals(user.getStripeCustomerId())) {
-				// usersテーブルのstripe_customer_idを新しいcustomerIdで更新
 				user.setStripeCustomerId(customerId);
 				userRepository.save(user);
 			}
@@ -139,10 +149,6 @@ public class UserController {
 
 			// 新しい支払い方法を設定
 			stripeService.updateCustomerCreditCard(customerId, paymentMethodId);
-
-			// 更新後のカード情報を確認
-			Map<String, String> updatedCardDetails = stripeService.getCreditCardInfo(customerId);
-			logger.info("Updated card details after update: {}", updatedCardDetails);
 
 			response.put("status", "success");
 			response.put("message", "Customer's card updated successfully");
@@ -160,7 +166,9 @@ public class UserController {
 	@PostMapping("/cancel-subscription")
 	@Transactional
 	public String cancelSubscription(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
-			RedirectAttributes redirectAttributes) {
+			RedirectAttributes redirectAttributes,
+			HttpServletRequest request,
+			HttpServletResponse response) {
 		User user = userDetailsImpl.getUser();
 
 		try {
@@ -179,6 +187,14 @@ public class UserController {
 			}
 
 			redirectAttributes.addFlashAttribute("successMessage", "サブスクリプションを解約しました。");
+
+			// ログアウト処理を実行
+			request.getSession().invalidate(); // セッションを無効化
+			SecurityContextHolder.clearContext(); // セキュリティコンテキストをクリア
+
+			// ログイン画面にリダイレクト
+			return "redirect:/login";
+
 		} catch (StripeException e) {
 			redirectAttributes.addFlashAttribute("errorMessage", "クレジットカード情報の削除中にエラーが発生しました。");
 			logger.error("Error during subscription cancellation", e);

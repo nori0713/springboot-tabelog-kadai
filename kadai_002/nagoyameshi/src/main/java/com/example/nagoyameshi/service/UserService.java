@@ -245,4 +245,10 @@ public class UserService {
 			throw new RuntimeException("Failed to cancel subscription", e);
 		}
 	}
+
+	// 新しいメソッドを追加
+	@Transactional
+	public void saveUser(User user) {
+		userRepository.save(user);
+	}
 }

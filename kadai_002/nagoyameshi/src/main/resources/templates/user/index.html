@@ -37,6 +37,11 @@
                         <div class="mb-3">
                             <a th:href="@{/change-password}">パスワードを変更</a>
                         </div>
+						
+						<!-- クレジットカード情報の変更リンク（有料会員のみ表示） -->
+						<div class="mb-3" th:if="${user.role.name == 'ROLE_PREMIUM'}">
+							<a th:href="@{/user/update-card}">クレジットカード情報を変更</a>
+						</div>
 
                         <!-- 会員ステータスの表示 -->
                         <div class="container mb-4">
