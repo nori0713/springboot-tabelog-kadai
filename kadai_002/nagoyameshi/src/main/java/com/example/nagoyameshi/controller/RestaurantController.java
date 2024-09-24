@@ -70,14 +70,13 @@ public class RestaurantController {
 		model.addAttribute("keyword", keyword);
 		model.addAttribute("order", order);
 
-		// ページネーション付きで飲食店を取得
 		Page<Restaurant> restaurantPage;
 
-		// キーワード検索
+		// キーワード検索がある場合
 		if (keyword != null && !keyword.isEmpty()) {
 			restaurantPage = restaurantRepository.findByNameLike("%" + keyword + "%", pageable);
 		}
-		// カテゴリ、価格、予約人数、並び替えの検索条件をチェックして対応する検索ロジックを適用
+		// カテゴリ、価格、予約人数、並び替えの検索条件をチェック
 		else if (categoryId != null && categoryId > 0) {
 			if (minPrice != null && maxPrice != null && capacity != null) {
 				restaurantPage = restaurantRepository.findByCategoryIdAndPriceBetweenAndCapacityGreaterThanEqual(
@@ -91,7 +90,13 @@ public class RestaurantController {
 			} else {
 				restaurantPage = restaurantRepository.findByCategoryId(categoryId, pageable);
 			}
-		} else if (minPrice != null && maxPrice != null && capacity != null) {
+		}
+		// 10000円以上のレストランを表示
+		else if (minPrice != null && maxPrice == null && minPrice == 10000) {
+			restaurantPage = restaurantRepository.findByPriceGreaterThanEqual(minPrice, pageable);
+		}
+		// 価格範囲検索
+		else if (minPrice != null && maxPrice != null && capacity != null) {
 			restaurantPage = restaurantRepository.findByPriceBetweenAndCapacityGreaterThanEqual(minPrice, maxPrice,
 					capacity, pageable);
 		} else if (minPrice != null && maxPrice != null) {
