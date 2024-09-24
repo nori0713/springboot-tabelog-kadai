@@ -104,16 +104,23 @@ public class UserService {
 		return stripeService.createSubscriptionSession(request, userEmail);
 	}
 
+	// ユーザー情報の更新メソッド
 	@Transactional
-	public void update(UserEditForm userEditForm) {
-		User user = userRepository.getReferenceById(userEditForm.getId());
+	public void updateUser(UserEditForm userEditForm) {
+		User user = userRepository.findById(userEditForm.getId())
+				.orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+		// フォームの値を使用してユーザー情報を更新
 		user.setName(userEditForm.getName());
 		user.setFurigana(userEditForm.getFurigana());
 		user.setPostalCode(userEditForm.getPostalCode());
 		user.setAddress(userEditForm.getAddress());
 		user.setPhoneNumber(userEditForm.getPhoneNumber());
-		user.setEmail(userEditForm.getEmail());
+
+		// メールアドレスが変更されたかどうかを確認
+		if (!user.getEmail().equals(userEditForm.getEmail())) {
+			user.setEmail(userEditForm.getEmail());
+		}
 
 		userRepository.save(user);
 	}

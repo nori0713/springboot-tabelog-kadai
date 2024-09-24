@@ -60,29 +60,58 @@
 						        1食あたりの予算から探す
 						    </div>
 						    <div class="card-body">
-								<form method="get" th:action="@{/restaurants}" class="w-100">
-								    <div class="form-group mb-3">
-								        <select class="form-control form-select" name="price">
-								            <option value="" hidden>選択してください</option>
-								            <option value="999" th:selected="${price == 999}">0～999円</option>
-								            <option value="1999" th:selected="${price == 1999}">1,000円～1,999円</option>
-								            <option value="2999" th:selected="${price == 2999}">2,000円～2,999円</option>
-								            <option value="3999" th:selected="${price == 3999}">3,000円～3,999円</option>
-								            <option value="4999" th:selected="${price == 4999}">4,000円～4,999円</option>
-								            <option value="5999" th:selected="${price == 5999}">5,000円～5,999円</option>
-								            <option value="6999" th:selected="${price == 6999}">6,000円～6,999円</option>
-								            <option value="7999" th:selected="${price == 7999}">7,000円～7,999円</option>
-								            <option value="8999" th:selected="${price == 8999}">8,000円～8,999円</option>
-								            <option value="9999" th:selected="${price == 9999}">9,000円～9,999円</option>
-								            <option value="10000" th:selected="${price == 10000}">10,000円～</option>
-								        </select>
-								    </div>
-								    <div class="form-group">
-								        <button type="submit" class="btn text-white shadow-sm w-100 nagoyameshi-btn">検索</button>
-								    </div>
-								</form>
+						        <form method="get" th:action="@{/restaurants}" class="w-100">
+						            <div class="form-group mb-3">
+						                <select class="form-control form-select" name="minPrice" id="minPrice" onchange="handlePriceChange()">
+						                    <option value="" hidden>最低価格を選択</option>
+						                    <option value="999" th:selected="${minPrice == 999}">0～999円</option>
+						                    <option value="1999" th:selected="${minPrice == 1999}">1,000円～1,999円</option>
+						                    <option value="2999" th:selected="${minPrice == 2999}">2,000円～2,999円</option>
+						                    <option value="3999" th:selected="${minPrice == 3999}">3,000円～3,999円</option>
+						                    <option value="4999" th:selected="${minPrice == 4999}">4,000円～4,999円</option>
+						                    <option value="5999" th:selected="${minPrice == 5999}">5,000円～5,999円</option>
+						                    <option value="6999" th:selected="${minPrice == 6999}">6,000円～6,999円</option>
+						                    <option value="7999" th:selected="${minPrice == 7999}">7,000円～7,999円</option>
+						                    <option value="8999" th:selected="${minPrice == 8999}">8,000円～8,999円</option>
+						                    <option value="9999" th:selected="${minPrice == 9999}">9,000円～9,999円</option>
+						                    <option value="10000" th:selected="${minPrice == 10000}">10,000円～</option>
+						                </select>
+						            </div>
+						            <div class="form-group mb-3">
+						                <select class="form-control form-select" name="maxPrice" id="maxPrice">
+						                    <option value="" hidden>最大価格を選択</option>
+						                    <option value="1999" th:selected="${maxPrice == 1999}">～1,999円</option>
+						                    <option value="2999" th:selected="${maxPrice == 2999}">～2,999円</option>
+						                    <option value="3999" th:selected="${maxPrice == 3999}">～3,999円</option>
+						                    <option value="4999" th:selected="${maxPrice == 4999}">～4,999円</option>
+						                    <option value="5999" th:selected="${maxPrice == 5999}">～5,999円</option>
+						                    <option value="6999" th:selected="${maxPrice == 6999}">～6,999円</option>
+						                    <option value="7999" th:selected="${maxPrice == 7999}">～7,999円</option>
+						                    <option value="8999" th:selected="${maxPrice == 8999}">～8,999円</option>
+						                    <option value="9999" th:selected="${maxPrice == 9999}">～9,999円</option>
+						                </select>
+						            </div>
+						            <div class="form-group">
+						                <button type="submit" class="btn text-white shadow-sm w-100 nagoyameshi-btn">検索</button>
+						            </div>
+						        </form>
 						    </div>
 						</div>
+						
+						<script>
+						function handlePriceChange() {
+						    const minPrice = document.getElementById("minPrice").value;
+						    const maxPrice = document.getElementById("maxPrice");
+						
+						    // 10,000円以上が選択された場合、最大価格を無効化
+						    if (minPrice == "10000") {
+						        maxPrice.value = "";  // クリアする
+						        maxPrice.disabled = true;  // 無効化
+						    } else {
+						        maxPrice.disabled = false;  // 有効化
+						    }
+						}
+						</script>
 
                         <!-- 予約最大人数で検索 -->
                         <div class="card mb-3">

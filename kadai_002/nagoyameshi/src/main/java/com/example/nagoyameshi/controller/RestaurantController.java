@@ -32,12 +32,12 @@ import com.example.nagoyameshi.service.FavoriteService;
 @Controller
 public class RestaurantController {
 
-	private static final Logger logger = LoggerFactory.getLogger(RestaurantController.class); // ロガーの定義
+	private static final Logger logger = LoggerFactory.getLogger(RestaurantController.class);
 
 	private final RestaurantRepository restaurantRepository;
 	private final ReviewRepository reviewRepository;
 	private final FavoriteService favoriteService;
-	private final CategoryRepository categoryRepository; // CategoryRepositoryを追加
+	private final CategoryRepository categoryRepository;
 
 	public RestaurantController(RestaurantRepository restaurantRepository,
 			ReviewRepository reviewRepository,
@@ -51,56 +51,69 @@ public class RestaurantController {
 
 	// 飲食店一覧を表示するためのメソッド
 	@GetMapping("/restaurants")
-	public String listRestaurants(@RequestParam(name = "category", required = false) Integer categoryId,
-			@RequestParam(name = "price", required = false) Integer price,
-			@RequestParam(name = "capacity", required = false) Integer capacity, // 予約人数パラメータを追加
+	public String listRestaurants(@RequestParam(name = "keyword", required = false) String keyword,
+			@RequestParam(name = "category", required = false) Integer categoryId,
+			@RequestParam(name = "minPrice", required = false) Integer minPrice,
+			@RequestParam(name = "maxPrice", required = false) Integer maxPrice,
+			@RequestParam(name = "capacity", required = false) Integer capacity,
+			@RequestParam(name = "order", required = false, defaultValue = "createdAtDesc") String order,
 			Model model,
 			@PageableDefault(size = 10, sort = "name", direction = Sort.Direction.ASC) Pageable pageable) {
+
 		// カテゴリデータを取得してモデルに追加
 		List<Category> categories = categoryRepository.findAll();
 		model.addAttribute("categories", categories);
 		model.addAttribute("categoryId", categoryId);
-		model.addAttribute("price", price); // 価格帯パラメータをモデルに追加
-		model.addAttribute("capacity", capacity); // 予約人数パラメータをモデルに追加
+		model.addAttribute("minPrice", minPrice);
+		model.addAttribute("maxPrice", maxPrice);
+		model.addAttribute("capacity", capacity);
+		model.addAttribute("keyword", keyword);
+		model.addAttribute("order", order);
 
 		// ページネーション付きで飲食店を取得
 		Page<Restaurant> restaurantPage;
 
-		// カテゴリ、価格、人数の検索条件をチェックして対応する検索ロジックを適用
-		if (categoryId != null && categoryId > 0) {
-			if (price != null && capacity != null) {
-				// カテゴリ + 価格帯 + 予約人数でフィルタリング
-				restaurantPage = restaurantRepository.findByCategoryIdAndPriceLessThanEqualAndCapacityGreaterThanEqual(
-						categoryId, price, capacity, pageable);
-			} else if (price != null) {
-				// カテゴリ + 価格帯でフィルタリング
-				restaurantPage = restaurantRepository.findByCategoryIdAndPriceLessThanEqual(categoryId, price,
+		// キーワード検索
+		if (keyword != null && !keyword.isEmpty()) {
+			restaurantPage = restaurantRepository.findByNameLike("%" + keyword + "%", pageable);
+		}
+		// カテゴリ、価格、予約人数、並び替えの検索条件をチェックして対応する検索ロジックを適用
+		else if (categoryId != null && categoryId > 0) {
+			if (minPrice != null && maxPrice != null && capacity != null) {
+				restaurantPage = restaurantRepository.findByCategoryIdAndPriceBetweenAndCapacityGreaterThanEqual(
+						categoryId, minPrice, maxPrice, capacity, pageable);
+			} else if (minPrice != null && maxPrice != null) {
+				restaurantPage = restaurantRepository.findByCategoryIdAndPriceBetween(categoryId, minPrice, maxPrice,
 						pageable);
 			} else if (capacity != null) {
-				// カテゴリ + 予約人数でフィルタリング
 				restaurantPage = restaurantRepository.findByCategoryIdAndCapacityGreaterThanEqual(categoryId, capacity,
 						pageable);
 			} else {
-				// カテゴリでフィルタリング
 				restaurantPage = restaurantRepository.findByCategoryId(categoryId, pageable);
 			}
-		} else if (price != null && capacity != null) {
-			// 価格帯 + 予約人数でフィルタリング
-			restaurantPage = restaurantRepository.findByPriceLessThanEqualAndCapacityGreaterThanEqual(price, capacity,
-					pageable);
-		} else if (price != null) {
-			// 価格帯でフィルタリング
-			restaurantPage = restaurantRepository.findByPriceLessThanEqual(price, pageable);
+		} else if (minPrice != null && maxPrice != null && capacity != null) {
+			restaurantPage = restaurantRepository.findByPriceBetweenAndCapacityGreaterThanEqual(minPrice, maxPrice,
+					capacity, pageable);
+		} else if (minPrice != null && maxPrice != null) {
+			restaurantPage = restaurantRepository.findByPriceBetween(minPrice, maxPrice, pageable);
 		} else if (capacity != null) {
-			// 予約人数でフィルタリング
 			restaurantPage = restaurantRepository.findByCapacityGreaterThanEqual(capacity, pageable);
 		} else {
-			// すべてのレストランを取得
-			restaurantPage = restaurantRepository.findAll(pageable);
+			// 並び替え処理
+			if ("priceAsc".equals(order)) {
+				restaurantPage = restaurantRepository.findAllByOrderByPriceAsc(pageable);
+			} else if ("nameAsc".equals(order)) {
+				restaurantPage = restaurantRepository.findAllByOrderByNameAsc(pageable);
+			} else if ("capacityDesc".equals(order)) {
+				restaurantPage = restaurantRepository.findAllByOrderByCapacityDesc(pageable);
+			} else {
+				// デフォルト: 新着順
+				restaurantPage = restaurantRepository.findAllByOrderByCreatedAtDesc(pageable);
+			}
 		}
 
 		model.addAttribute("restaurantPage", restaurantPage);
-		return "restaurants/index"; // テンプレートのパスを指定
+		return "restaurants/index";
 	}
 
 	@GetMapping("/restaurants/{id}")
@@ -136,7 +149,6 @@ public class RestaurantController {
 		// レビューのユーザー情報チェック
 		reviews.forEach(review -> {
 			if (review.getUser() == null) {
-				// ユーザーがnullの場合の処理
 				logger.warn("Review does not have an associated user. Review ID: " + review.getId());
 			}
 		});
