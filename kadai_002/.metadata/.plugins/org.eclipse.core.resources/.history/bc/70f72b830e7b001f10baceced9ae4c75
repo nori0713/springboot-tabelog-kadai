@@ -47,7 +47,7 @@
                                         <td th:text="${reservation.numberOfPeople + '名'}"></td>
                                         <td>
                                             <!-- キャンセルボタンを追加 -->
-											<button class="btn btn-danger" th:onclick="'showCancelModal(' + ${reservation.id} + ')'">キャンセル</button>
+                                            <button class="btn btn-danger" onclick="showCancelModal([[${reservation.id}]])">キャンセル</button>
                                         </td>
                                     </tr>                                    
                                 </tbody>
