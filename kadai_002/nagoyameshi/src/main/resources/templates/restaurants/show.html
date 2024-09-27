@@ -27,8 +27,8 @@
                                 </ol>
                             </nav> 
                         
-                            <!-- お気に入りセクション -->
-                            <div sec:authorize="isAuthenticated()">
+                            <!-- お気に入りセクション (無料会員は非表示) -->
+                            <div sec:authorize="hasRole('ROLE_PREMIUM')">
                                 <a href="#" onclick="event.preventDefault(); document.getElementById('favorite-form').submit();"
                                    th:text="${isFavorite != null and isFavorite ? 'お気に入り解除' : 'お気に入り追加'}">
                                 </a>
@@ -115,7 +115,7 @@
                                             <span class="fw-bold">営業時間</span>
                                         </div>
                                         <div class="col">
-                                            <span id="openingTime" th:text="'開店: ' + (${formattedOpeningTime != null ? formattedOpeningTime : '未定'})"></span> ～
+                                            <span id="openingTime" th:text="'開店: ' + (${formattedOpeningTime != null ? formattedOpeningTime : '未定'})"></span> ～ 
                                             <span id="closingTime" th:text="'閉店: ' + (${formattedClosingTime != null ? formattedClosingTime : '未定'})"></span>
                                         </div>
                                     </div>
@@ -152,10 +152,10 @@
                                 </div>
                                 
                                 <!-- 無料会員の場合の処理 -->
-                                <div sec:authorize="hasRole('FREE')" class="col-lg-4 px-0 ps-lg-4 mb-4">                  
+                                <div sec:authorize="hasRole('ROLE_FREE')" class="col-lg-4 px-0 ps-lg-4 mb-4">                  
                                     <div class="card">
                                         <div class="card-body">                                                                                                                                                                                                                     
-                                            <p class="card-text">予約機能は月額300円の有料会員になることで利用ができます。</p>                                                                                
+                                            <p class="card-text">予約機能とレビュー機能は月額300円の有料会員になることで利用ができます。</p>                                                                                
                                             <form method="post" th:action="@{/user/subscribe}">
                                                 <button type="submit" class="btn text-white shadow-sm w-100 nagoyameshi-btn">決済をする</button>
                                             </form>                                                                                                    
@@ -164,7 +164,7 @@
                                 </div>
 
                                 <!-- 有料会員の場合の処理 -->
-                                <div sec:authorize="hasRole('PREMIUM')" class="col-lg-4 px-0 ps-lg-4 mb-4">                  
+                                <div sec:authorize="hasRole('ROLE_PREMIUM')" class="col-lg-4 px-0 ps-lg-4 mb-4">                  
                                     <div class="card">
                                         <div class="card-body"> 
                                             <form th:action="@{/restaurants/{id}/reservations/input(id=${restaurant.id})}" 
@@ -220,7 +220,19 @@
 			<!-- レビューセクション -->
 			<div class="mt-4 review-section">
 			    <h2 class="text-center">レビュー</h2>
-			    <div sec:authorize="isAuthenticated()" class="d-flex justify-content-center">
+
+                <!-- 無料会員の場合の処理（レビュー投稿誘導） -->
+                <div sec:authorize="hasRole('ROLE_FREE')" class="d-flex justify-content-center">
+                    <div class="card-body d-flex justify-content-center">
+                        <p>レビュー機能は月額300円の有料会員になることで利用ができます。</p>
+                        <form method="post" th:action="@{/user/subscribe}">
+                            <button type="submit" class="btn text-white shadow-sm w-100 nagoyameshi-btn">決済をする</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 有料会員およびログイン済みの場合のレビュー投稿セクション -->
+			    <div sec:authorize="hasRole('ROLE_PREMIUM')" class="d-flex justify-content-center">
 			        <div class="card-body d-flex justify-content-center">
 			            <a th:href="@{/restaurants/{restaurantId}/reviews/register(restaurantId=${restaurant.id})}" 
 			               class="btn text-white shadow-sm w-100 nagoyameshi-btn"
@@ -229,6 +241,7 @@
 			            </a>
 			        </div>
 			    </div>
+
 			    <br>
 			    <div class="text-center">
 			        <div th:if="${reviews == null || reviews.isEmpty()}">

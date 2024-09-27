@@ -3,7 +3,9 @@
     <head>
         <div th:replace="~{fragment :: meta}"></div>   
         <div th:replace="~{fragment :: styles}"></div>
-        <title>予約一覧</title>   
+        <title>予約一覧</title>
+        <meta th:name="_csrf" th:content="${_csrf.token}">
+        <meta th:name="_csrf_header" th:content="${_csrf.headerName}">
     </head>
     <body>
         <div class="nagoyameshi-wrapper">
@@ -46,7 +48,7 @@
                                         <td th:text="${#temporals.format(reservation.reservationTime, 'HH:mm')}"></td> <!-- 予約時間を表示 -->
                                         <td th:text="${reservation.numberOfPeople + '名'}"></td>
                                         <td>
-                                            <!-- キャンセルボタンを追加 -->
+                                            <!-- キャンセルボタン -->
 											<button class="btn btn-danger" th:onclick="'showCancelModal(' + ${reservation.id} + ')'">キャンセル</button>
                                         </td>
                                     </tr>                                    
@@ -121,8 +123,19 @@
 
             function cancelReservation() {
                 if (selectedReservationId) {
+                    // CSRFトークンとヘッダーの取得
+                    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+                    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+            
+                    // ヘッダーオブジェクトを作成してからfetchに渡す
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    headers[csrfHeader] = csrfToken;  // CSRFヘッダとトークンを追加
+            
                     fetch(`/reservations/${selectedReservationId}/cancel`, {
-                        method: 'POST'
+                        method: 'POST',
+                        headers: headers  // 作成したヘッダーオブジェクトを渡す
                     }).then(response => {
                         if (response.ok) {
                             alert('予約がキャンセルされました');
@@ -130,6 +143,9 @@
                         } else {
                             alert('予約キャンセルに失敗しました');
                         }
+                    }).catch(error => {
+                        alert('通信エラーが発生しました。');
+                        console.error('Error:', error);
                     });
                 }
             }

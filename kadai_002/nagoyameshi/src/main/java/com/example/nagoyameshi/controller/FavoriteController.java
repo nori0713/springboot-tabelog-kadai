@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -36,6 +37,8 @@ public class FavoriteController {
 		this.favoriteService = favoriteService;
 	}
 
+	// お気に入り一覧は有料会員のみアクセス可能
+	@PreAuthorize("hasRole('ROLE_PREMIUM')")
 	@GetMapping("/favorites")
 	public String showFavorites(@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
 			@PageableDefault(page = 0, size = 5, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
@@ -51,7 +54,8 @@ public class FavoriteController {
 		return "favorites/index";
 	}
 
-	// お気に入りトグル機能
+	// お気に入りトグル機能も有料会員のみ使用可能
+	@PreAuthorize("hasRole('ROLE_PREMIUM')")
 	@PostMapping("/restaurants/{restaurantId}/favorites/toggle")
 	public String toggleFavorite(@PathVariable(name = "restaurantId") Integer restaurantId,
 			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,

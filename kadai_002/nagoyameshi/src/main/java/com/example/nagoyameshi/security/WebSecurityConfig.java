@@ -21,9 +21,9 @@ public class WebSecurityConfig {
 				.authorizeHttpRequests((requests) -> requests
 						.requestMatchers("/css/**", "/images/**", "/js/**", "/storage/**", "/", "/index", "/signup/**",
 								"/restaurants", "/restaurants/{id}", "/restaurants/{id}/reviews", "/error")
-						.permitAll() // すべてのユーザーにアクセスを許可するURLに`/error`を追加
+						.permitAll() // すべてのユーザーにアクセスを許可するURL
 						.requestMatchers("/admin/**").hasRole("ADMIN") // 管理者にのみアクセスを許可するURL
-						.requestMatchers("/reservations/**").hasRole("PREMIUM") // 有料会員にのみアクセスを許可する予約機能
+						.requestMatchers("/reservations/**", "/favorites/**", "/reviews/**").hasRole("PREMIUM") // 有料会員にのみアクセスを許可する機能
 						.requestMatchers("/stripe/webhook").permitAll() // Webhookエンドポイントのアクセスを許可
 						.anyRequest().authenticated() // 上記以外のURLはログインが必要
 				)

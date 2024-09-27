@@ -3,6 +3,7 @@ package com.example.nagoyameshi.controller;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -54,6 +55,7 @@ public class ReviewController {
 		return "reviews/index";
 	}
 
+	@PreAuthorize("hasRole('ROLE_PREMIUM')")
 	@GetMapping("/register")
 	public String register(@PathVariable(name = "restaurantId") Integer restaurantId, Model model) {
 		Restaurant restaurant = restaurantRepository.findById(restaurantId)
@@ -65,6 +67,7 @@ public class ReviewController {
 		return "reviews/register";
 	}
 
+	@PreAuthorize("hasRole('ROLE_PREMIUM')")
 	@PostMapping("/create")
 	public String create(@PathVariable(name = "restaurantId") Integer restaurantId,
 			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl,
@@ -87,6 +90,7 @@ public class ReviewController {
 		return "redirect:/restaurants/" + restaurantId;
 	}
 
+	@PreAuthorize("hasRole('ROLE_PREMIUM')")
 	@GetMapping("/{reviewId}/edit")
 	public String edit(@PathVariable(name = "restaurantId") Integer restaurantId,
 			@PathVariable(name = "reviewId") Integer reviewId, Model model) {
@@ -105,6 +109,7 @@ public class ReviewController {
 		return "reviews/edit";
 	}
 
+	@PreAuthorize("hasRole('ROLE_PREMIUM')")
 	@PostMapping("/{reviewId}/update")
 	public String update(@PathVariable(name = "restaurantId") Integer restaurantId,
 			@PathVariable(name = "reviewId") Integer reviewId,
@@ -130,21 +135,17 @@ public class ReviewController {
 		return "redirect:/restaurants/{restaurantId}";
 	}
 
+	@PreAuthorize("hasRole('ROLE_PREMIUM')")
 	@PostMapping("/{reviewId}/delete")
 	public String delete(@PathVariable(name = "reviewId") Integer reviewId,
 			@RequestParam(name = "restaurantId") Integer restaurantId,
 			RedirectAttributes redirectAttributes) {
-		// 指定されたレビューが存在するか確認
 		reviewRepository.findById(reviewId)
 				.orElseThrow(() -> new ResourceNotFoundException("指定されたレビューが見つかりませんでした。"));
 
-		// レビューを削除
 		reviewRepository.deleteById(reviewId);
-
-		// 成功メッセージを設定
 		redirectAttributes.addFlashAttribute("successMessage", "レビューを削除しました。");
 
-		// レストラン詳細ページにリダイレクト
 		return "redirect:/restaurants/" + restaurantId;
 	}
 }

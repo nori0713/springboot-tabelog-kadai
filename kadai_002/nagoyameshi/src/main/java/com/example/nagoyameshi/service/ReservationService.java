@@ -5,8 +5,10 @@ import java.time.LocalTime;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.example.nagoyameshi.entity.Reservation;
 import com.example.nagoyameshi.entity.Restaurant;
@@ -73,5 +75,19 @@ public class ReservationService {
 	// ユーザーごとの予約リストを取得
 	public Page<Reservation> getReservationsForUser(User user, Pageable pageable) {
 		return reservationRepository.findByUserOrderByReservationDateDesc(user, pageable);
+	}
+
+	public Reservation getReservationById(Integer reservationId) {
+		return reservationRepository.findById(reservationId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reservation not found"));
+	}
+
+	@Transactional
+	public void cancelReservation(Integer reservationId) {
+		Reservation reservation = reservationRepository.findById(reservationId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reservation not found"));
+
+		// 予約を削除する
+		reservationRepository.delete(reservation);
 	}
 }

@@ -175,4 +175,24 @@ public class ReservationController {
 
 		return "reservations/index"; // 予約一覧ページのテンプレート名は`index`
 	}
+
+	// キャンセル機能を追加
+	@PostMapping("/reservations/{id}/cancel")
+	public String cancelReservation(@PathVariable(name = "id") Integer reservationId,
+			RedirectAttributes redirectAttributes,
+			@AuthenticationPrincipal UserDetailsImpl userDetailsImpl) {
+		User user = userDetailsImpl.getUser();
+
+		// 自分の予約であるかどうか確認
+		Reservation reservation = reservationService.getReservationById(reservationId);
+		if (reservation != null && reservation.getUser().getId().equals(user.getId())) {
+			// 予約をキャンセル
+			reservationService.cancelReservation(reservationId);
+			redirectAttributes.addFlashAttribute("message", "予約をキャンセルしました。");
+		} else {
+			redirectAttributes.addFlashAttribute("error", "予約のキャンセルに失敗しました。");
+		}
+
+		return "redirect:/reservations"; // キャンセル後に予約一覧にリダイレクト
+	}
 }
